@@ -1,0 +1,119 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/*",
+    "tools/*",
+]
+
+[workspace.dependencies]
+# local
+emmylua_code_analysis = { path = "crates/emmylua_code_analysis", version = "0.19.0" }
+emmylua_parser = { path = "crates/emmylua_parser", version = "0.21.0" }
+emmylua_parser_desc = { path = "crates/emmylua_parser_desc", version = "0.21.0" }
+emmylua_diagnostic_macro = { path = "crates/emmylua_diagnostic_macro", version = "0.5.0" }
+
+# external
+lsp-server = "0.7.9"
+tokio = { version = "1.48", features = ["full"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+rowan = { version = "0.16.1" }
+notify = { version = "8.2.0", features = ["serde"] }
+lsp_types = { version = "0.1.0", package = "emmy_lsp_types" }
+schemars = "1.0.4"
+regex = "1"
+internment = { version = "0.8.6", features = ["arc"] }
+rust-i18n = "3"
+log = "0.4.28"
+fern = "0.7.1"
+chrono = "0.4.42"
+tokio-util = "0.7.16"
+walkdir = "2.5.0"
+serde_yml = "0.0.12"
+dirs = "6"
+emmylua_codestyle = "0.6.0"
+wax = "0.6.0"
+percent-encoding = "2.3"
+flagset = "0.4.7"
+encoding_rs = "0.8"
+url = "2.5.7"
+smol_str = "0.3.4"
+tera = "1.20.1"
+serde_with = "3.12.0"
+proc-macro2 = "1.0"
+syn = "2.0"
+quote = "1.0"
+glob = "0.3"
+include_dir = "0.7.4"
+toml_edit = "0.22.23"
+itertools = "0.14.0"
+clap = { version = "4.5.51", features = ["derive", "wrap_help"] }
+ansi_term = "0.12.1"
+num-traits = { version = "0.2", features = ["std"] }
+mimalloc = "0.1.48"
+googletest = "0.14.2"
+unicode-general-category = "1.0.0"
+
+# Lint configuration for the entire workspace
+[workspace.lints.clippy]
+# ==== Domain-Specific Allowances ====
+# These patterns are acceptable/necessary in parser/language-server projects
+
+# Module inception is acceptable for AST/syntax organization
+module_inception = "allow"
+
+# Enum variant name repetition is necessary for syntax tree clarity
+enum_variant_names = "allow"
+
+# Parser methods often have domain-specific naming conventions
+wrong_self_convention = "allow"
+
+# Box collections are sometimes needed for complex recursive structures
+box_collection = "allow"
+
+# Parser constants shouldn't be confused with mathematical constants
+approx_constant = "allow"
+
+# Complex cognitive complexity is acceptable for domain-specific logic
+cognitive_complexity = "allow"
+
+# High type complexity threshold for domain modeling (see .clippy.toml for thresholds)
+type_complexity = "allow"
+
+# Allow many arguments for builder patterns and comprehensive APIs
+too_many_arguments = "allow"
+
+# ==== General Code Quality Allowances ====
+# Let-and-return is sometimes more readable for debugging
+let_and_return = "allow"
+
+# Needless borrow warnings in test code are often false positives
+needless_borrow = "allow"
+
+# Single component path imports are sometimes necessary
+single_component_path_imports = "allow"
+
+# Bool assertion comparisons are explicit and readable
+bool_assert_comparison = "allow"
+
+# Let unit value can be useful for side effects
+let_unit_value = "allow"
+
+# Clone on copy can be more explicit about intent
+clone_on_copy = "allow"
+
+# Collapsible if/match statements are sometimes more readable when separate
+collapsible_if = "allow"
+collapsible_match = "allow"
+
+# Some functions need a Default implementation pattern without Default trait
+new_without_default = "allow"
+
+# Manual implementations can be more explicit than derive
+manual_let_else = "allow"
+
+# ==== Documentation Lints ====
+# Allow missing docs for internal/test functions
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+undocumented_unsafe_blocks = "allow"

@@ -1,0 +1,8 @@
+/target
+.idea
+.cursor
+dhat-heap.json
+.claude
+
+# MCP, 用于为AI提供lsp上下文
+.serena

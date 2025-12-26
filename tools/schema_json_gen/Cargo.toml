@@ -1,0 +1,14 @@
+[package]
+name = "schema_json_gen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# local
+emmylua_code_analysis.workspace = true
+
+# external
+schemars.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+lsp_types.workspace = true

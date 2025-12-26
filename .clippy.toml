@@ -1,0 +1,4 @@
+# Clippy thresholds for EmmyLua Analyzer (parser/compiler project)
+cognitive-complexity-threshold = 50
+type-complexity-threshold = 150
+too-many-arguments-threshold = 12
