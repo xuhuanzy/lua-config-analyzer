@@ -19,7 +19,7 @@ pub struct EmmyrcStrict {
     #[serde(default)]
     pub type_call: bool,
     /// Whether to enable strict mode array indexing.
-    #[serde(default = "default_true")]
+    #[serde(default = "default_false")]
     pub array_index: bool,
     /// meta define overrides file define
     #[serde(default = "default_true")]
@@ -39,7 +39,7 @@ impl Default for EmmyrcStrict {
         Self {
             require_path: false,
             type_call: false,
-            array_index: true,
+            array_index: false,
             meta_override_file_define: true,
             doc_base_const_match_base_type: true,
             require_export_global: false,
