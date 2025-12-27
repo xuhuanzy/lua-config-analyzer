@@ -14,7 +14,7 @@ entries:
     end:
       line: 21
       col: 0
-  hash: '9fd22cd41017890e'
+  hash: '44b6d4a010496577'
   context_hash: de7cc417de1b3246
 - key: iolib.flush
   kind:
@@ -27,7 +27,7 @@ entries:
     end:
       line: 25
       col: 40
-  hash: '77b68d0b81e2a6ec'
+  hash: f24fea5b44d0e6cd
   context_hash: de7cc417de1b3246
 - key: iolib.input
   kind:
@@ -40,7 +40,7 @@ entries:
     end:
       line: 36
       col: 0
-  hash: '30a4cb7aed17b4e2'
+  hash: ae460a87629bf10c
   context_hash: de7cc417de1b3246
 - key: iolib.lines
   kind:
@@ -53,7 +53,7 @@ entries:
     end:
       line: 53
       col: 0
-  hash: '6bf53c14d9a3e328'
+  hash: b5a3c25c8f6d6c53
   context_hash: de7cc417de1b3246
 - key: iolib.open
   kind:
@@ -66,7 +66,7 @@ entries:
     end:
       line: 74
       col: 0
-  hash: df02368e03dde439
+  hash: a9dd6e1f359cad88
   context_hash: de7cc417de1b3246
 - key: iolib.output
   kind:
@@ -79,7 +79,7 @@ entries:
     end:
       line: 82
       col: 0
-  hash: '4e45ea3c8fb9457c'
+  hash: e615c6164764f06a
   context_hash: de7cc417de1b3246
 - key: iolib.popen
   kind:
@@ -92,7 +92,7 @@ entries:
     end:
       line: 92
       col: 0
-  hash: be397ad0e73d2933
+  hash: ed9fe53d586ce4f7
   context_hash: de7cc417de1b3246
 - key: std.readmode.item.n
   kind:
@@ -209,7 +209,7 @@ entries:
     end:
       line: 111
       col: 0
-  hash: '771eb15e50f555d7'
+  hash: '54506e4af4c5171d'
   context_hash: de7cc417de1b3246
 - key: iolib.tmpfile
   kind:
@@ -222,7 +222,7 @@ entries:
     end:
       line: 120
       col: 0
-  hash: '8c5fee923fff7b7d'
+  hash: c32f01b42c8a68a4
   context_hash: de7cc417de1b3246
 - key: iolib.type
   kind:
@@ -235,7 +235,7 @@ entries:
     end:
       line: 127
       col: 0
-  hash: a9422cffda6cfcf8
+  hash: '0c2c9cc2436170fc'
   context_hash: de7cc417de1b3246
 - key: iolib.write
   kind:
@@ -248,7 +248,7 @@ entries:
     end:
       line: 133
       col: 0
-  hash: '2a7a93b6b492d6e7'
+  hash: cddfb7fad90f9885
   context_hash: de7cc417de1b3246
 - key: file
   kind:
@@ -261,7 +261,7 @@ entries:
     end:
       line: 139
       col: 0
-  hash: '44f701b90e451a28'
+  hash: '045bdb188ddcd0b3'
   context_hash: '6b5eb10d9792750b'
 - key: file.close@>5.2
   kind:
@@ -274,7 +274,7 @@ entries:
     end:
       line: 150
       col: 0
-  hash: '506043bf254a978d'
+  hash: '925e9a7d74c51050'
   context_hash: de7cc417de1b3246
 - key: file.close@5.1,JIT
   kind:
@@ -287,7 +287,7 @@ entries:
     end:
       line: 160
       col: 0
-  hash: '8b2730ffb16aacd6'
+  hash: '0564fc98d5b21d64'
   context_hash: de7cc417de1b3246
 - key: file.flush
   kind:
@@ -300,7 +300,7 @@ entries:
     end:
       line: 166
       col: 0
-  hash: cb93f3d56af1b6ff
+  hash: f7013005b20a614b
   context_hash: de7cc417de1b3246
 - key: file.lines
   kind:
@@ -313,7 +313,7 @@ entries:
     end:
       line: 181
       col: 0
-  hash: '2f9df86b5b29e9c5'
+  hash: '508dc2e1535ff268'
   context_hash: de7cc417de1b3246
 - key: file.read
   kind:
@@ -326,7 +326,7 @@ entries:
     end:
       line: 210
       col: 0
-  hash: '6748446b86c12534'
+  hash: '7a2d6af1f2bbe438'
   context_hash: de7cc417de1b3246
 - key: file.seek
   kind:
@@ -339,7 +339,7 @@ entries:
     end:
       line: 233
       col: 0
-  hash: bb0f0c4d8ca400b2
+  hash: '5c24a5255775d005'
   context_hash: de7cc417de1b3246
 - key: file.setvbuf
   kind:
@@ -352,7 +352,7 @@ entries:
     end:
       line: 252
       col: 0
-  hash: b023f23bc1af6ca7
+  hash: a3b3e8e9502ee3dd
   context_hash: de7cc417de1b3246
 - key: file.write
   kind:
@@ -365,7 +365,7 @@ entries:
     end:
       line: 262
       col: 0
-  hash: '868914df6d494b96'
+  hash: '4ce76ceb7010e8d4'
   context_hash: de7cc417de1b3246
 - key: iolib.stderr
   kind:
@@ -378,7 +378,7 @@ entries:
     end:
       line: 268
       col: 0
-  hash: '3f87a382a528ef4c'
+  hash: '310160a514fa3aa7'
   context_hash: '241ad9d43dd76137'
 - key: iolib.stdin
   kind:
@@ -391,7 +391,7 @@ entries:
     end:
       line: 272
       col: 0
-  hash: b3683d38bfd93f8f
+  hash: e4e095bc73c9bfa6
   context_hash: aa04d03ab1feb2c8
 - key: iolib.stdout
   kind:
@@ -404,5 +404,5 @@ entries:
     end:
       line: 276
       col: 0
-  hash: b969090b3463d8a5
+  hash: '499f9ffe429f1468'
   context_hash: d5100f194d3f55f2

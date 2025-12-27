@@ -14,7 +14,7 @@ entries:
     end:
       line: 21
       col: 0
-  hash: '9b2a917ccb76530b'
+  hash: f356cf9741f325d8
   context_hash: de7cc417de1b3246
 - key: std.osdate.field.year
   kind:
@@ -144,7 +144,7 @@ entries:
     end:
       line: 67
       col: 0
-  hash: '74c81b78019554e4'
+  hash: '7d09adea10d81f1c'
   context_hash: de7cc417de1b3246
 - key: oslib.difftime
   kind:
@@ -157,7 +157,7 @@ entries:
     end:
       line: 78
       col: 0
-  hash: '6a0b703ea28839f7'
+  hash: '43413a584706c19f'
   context_hash: de7cc417de1b3246
 - key: oslib.execute@>5.2
   kind:
@@ -170,7 +170,7 @@ entries:
     end:
       line: 97
       col: 0
-  hash: '534ea24d2e6da6c0'
+  hash: '048fc98673135403'
   context_hash: de7cc417de1b3246
 - key: oslib.execute@5.1,JIT
   kind:
@@ -183,7 +183,7 @@ entries:
     end:
       line: 110
       col: 0
-  hash: cfd1f1e32f605f58
+  hash: '591ce990cca64597'
   context_hash: de7cc417de1b3246
 - key: oslib.exit@>5.2,JIT
   kind:
@@ -196,7 +196,7 @@ entries:
     end:
       line: 123
       col: 0
-  hash: '4fda0e69acf947bb'
+  hash: '959a0fc368af4eeb'
   context_hash: de7cc417de1b3246
 - key: oslib.exit@5.1
   kind:
@@ -209,7 +209,7 @@ entries:
     end:
       line: 132
       col: 0
-  hash: ef5d094abaa551fd
+  hash: '0737442ecb98fb28'
   context_hash: de7cc417de1b3246
 - key: oslib.getenv
   kind:
@@ -222,7 +222,7 @@ entries:
     end:
       line: 139
       col: 0
-  hash: '101bdb2422c380c0'
+  hash: '86d5390aaead2953'
   context_hash: de7cc417de1b3246
 - key: oslib.remove
   kind:
@@ -235,7 +235,7 @@ entries:
     end:
       line: 147
       col: 0
-  hash: c3e36a31c22ce5ea
+  hash: f885cf84385d6f76
   context_hash: de7cc417de1b3246
 - key: oslib.rename
   kind:
@@ -248,7 +248,7 @@ entries:
     end:
       line: 156
       col: 0
-  hash: '400a03f66b702215'
+  hash: '6ba16cc17d958c2d'
   context_hash: de7cc417de1b3246
 - key: oslib.setlocale
   kind:
@@ -261,7 +261,7 @@ entries:
     end:
       line: 179
       col: 0
-  hash: d4332152c62608ba
+  hash: daf3f33062f25c95
   context_hash: de7cc417de1b3246
 - key: std.osdateparam.field.year
   kind:
@@ -391,7 +391,7 @@ entries:
     end:
       line: 217
       col: 0
-  hash: fcaa6c7521e56af4
+  hash: '06fbd3c08f3140b4'
   context_hash: de7cc417de1b3246
 - key: oslib.tmpname
   kind:
@@ -404,5 +404,5 @@ entries:
     end:
       line: 234
       col: 0
-  hash: '7d4f7ce2378cf7da'
+  hash: f2fe09d004acaf8d
   context_hash: de7cc417de1b3246

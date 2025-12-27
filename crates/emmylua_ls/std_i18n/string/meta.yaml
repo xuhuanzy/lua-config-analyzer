@@ -14,7 +14,7 @@ entries:
     end:
       line: 20
       col: 0
-  hash: a72ac7db3f7d4603
+  hash: '7d45b1fdfe103330'
   context_hash: de7cc417de1b3246
 - key: string.byte
   kind:
@@ -27,7 +27,7 @@ entries:
     end:
       line: 30
       col: 0
-  hash: '5ca99caefe62dd0b'
+  hash: '23728f6e2128c3d8'
   context_hash: de7cc417de1b3246
 - key: string.char
   kind:
@@ -40,7 +40,7 @@ entries:
     end:
       line: 42
       col: 0
-  hash: '39697fcb2bdf094f'
+  hash: '466e7ba52bffb517'
   context_hash: de7cc417de1b3246
 - key: string.dump
   kind:
@@ -53,7 +53,7 @@ entries:
     end:
       line: 57
       col: 0
-  hash: '7a9424d0441a129a'
+  hash: fd900fe0438a893d
   context_hash: de7cc417de1b3246
 - key: string.find
   kind:
@@ -66,7 +66,7 @@ entries:
     end:
       line: 75
       col: 0
-  hash: '7ab6f8359e5d19c2'
+  hash: cdd72941a616aba1
   context_hash: de7cc417de1b3246
 - key: string.format
   kind:
@@ -79,7 +79,7 @@ entries:
     end:
       line: 114
       col: 0
-  hash: '1b6b640f12c7c5ee'
+  hash: '556ac751926488c5'
   context_hash: de7cc417de1b3246
 - key: string.gmatch
   kind:
@@ -92,7 +92,7 @@ entries:
     end:
       line: 144
       col: 0
-  hash: '78ff847ad504f943'
+  hash: '1c47a85ca663737b'
   context_hash: de7cc417de1b3246
 - key: string.gsub
   kind:
@@ -105,7 +105,7 @@ entries:
     end:
       line: 192
       col: 0
-  hash: f241d32e2a8fb75f
+  hash: b77b36d17a4f8e02
   context_hash: de7cc417de1b3246
 - key: string.len
   kind:
@@ -118,7 +118,7 @@ entries:
     end:
       line: 203
       col: 0
-  hash: cddd67e2a2b28c2e
+  hash: d1ec499f5425418f
   context_hash: de7cc417de1b3246
 - key: string.lower
   kind:
@@ -131,7 +131,7 @@ entries:
     end:
       line: 211
       col: 0
-  hash: '4c234ee3d950bad4'
+  hash: '22f67fb9bd5cd794'
   context_hash: de7cc417de1b3246
 - key: string.match
   kind:
@@ -144,7 +144,7 @@ entries:
     end:
       line: 221
       col: 0
-  hash: '73a921b42b7c11d4'
+  hash: '0e062e6519cf2d1c'
   context_hash: de7cc417de1b3246
 - key: string.pack
   kind:
@@ -157,7 +157,7 @@ entries:
     end:
       line: 231
       col: 0
-  hash: '5da2ac260adbb234'
+  hash: e64055d51fc2dd11
   context_hash: de7cc417de1b3246
 - key: string.packsize
   kind:
@@ -170,7 +170,7 @@ entries:
     end:
       line: 243
       col: 0
-  hash: f5740841b9e9c4b1
+  hash: d0c02d546b981c9d
   context_hash: de7cc417de1b3246
 - key: string.rep
   kind:
@@ -183,7 +183,7 @@ entries:
     end:
       line: 255
       col: 0
-  hash: ee87e632f2e1a738
+  hash: '60de02d42aa83f5c'
   context_hash: de7cc417de1b3246
 - key: string.reverse
   kind:
@@ -196,7 +196,7 @@ entries:
     end:
       line: 263
       col: 0
-  hash: c0411ed95baa29f4
+  hash: '5e3925d65b609ff2'
   context_hash: de7cc417de1b3246
 - key: string.sub
   kind:
@@ -209,7 +209,7 @@ entries:
     end:
       line: 279
       col: 0
-  hash: a25451cdfc2b643e
+  hash: '3523053a2ef82144'
   context_hash: de7cc417de1b3246
 - key: string.unpack
   kind:
@@ -222,7 +222,7 @@ entries:
     end:
       line: 292
       col: 0
-  hash: df66a1c8efef1986
+  hash: b7f21ca278df908f
   context_hash: de7cc417de1b3246
 - key: string.upper
   kind:
@@ -235,5 +235,5 @@ entries:
     end:
       line: 303
       col: 0
-  hash: '77d737c7349fb1f7'
+  hash: '6908766e93c8de31'
   context_hash: de7cc417de1b3246

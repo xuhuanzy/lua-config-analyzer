@@ -14,7 +14,7 @@ entries:
     end:
       line: 21
       col: 0
-  hash: f783b853bcc6436b
+  hash: '1f3f260a67000226'
   context_hash: de7cc417de1b3246
 - key: coroutinelib.isyieldable
   kind:
@@ -27,7 +27,7 @@ entries:
     end:
       line: 31
       col: 0
-  hash: '20f67ae45ee960e5'
+  hash: '362633ff752f9974'
   context_hash: de7cc417de1b3246
 - key: coroutinelib.close
   kind:
@@ -40,7 +40,7 @@ entries:
     end:
       line: 40
       col: 0
-  hash: ed170c5fa338cd96
+  hash: e4a9c56b899d7f35
   context_hash: de7cc417de1b3246
 - key: coroutinelib.resume
   kind:
@@ -53,7 +53,7 @@ entries:
     end:
       line: 56
       col: 0
-  hash: c68b5b72b7f9a791
+  hash: f66e7ece974f2146
   context_hash: de7cc417de1b3246
 - key: coroutinelib.running
   kind:
@@ -66,7 +66,7 @@ entries:
     end:
       line: 66
       col: 0
-  hash: '3b9508453c78ef79'
+  hash: '5586d0268eacaa38'
   context_hash: de7cc417de1b3246
 - key: coroutinelib.status
   kind:
@@ -79,7 +79,7 @@ entries:
     end:
       line: 77
       col: 0
-  hash: '2c49c377233084fa'
+  hash: d9bdbdaac77cb29d
   context_hash: de7cc417de1b3246
 - key: coroutinelib.status.return.1.running
   kind:
@@ -144,7 +144,7 @@ entries:
     end:
       line: 92
       col: 0
-  hash: '980a35b924ee089e'
+  hash: '9d2166681f056344'
   context_hash: de7cc417de1b3246
 - key: coroutinelib.yield
   kind:
@@ -157,5 +157,5 @@ entries:
     end:
       line: 100
       col: 0
-  hash: '25ba6e8d8cf7cc0d'
+  hash: e6bb9bfdfef14140
   context_hash: de7cc417de1b3246

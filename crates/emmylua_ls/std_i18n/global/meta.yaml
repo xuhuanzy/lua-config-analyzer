@@ -14,7 +14,7 @@ entries:
     end:
       line: 20
       col: 0
-  hash: f03a861ce68b284a
+  hash: a04606caad8dd4b1
   context_hash: de7cc417de1b3246
 - key: std.collectgarbage_opt.item.collect
   kind:
@@ -157,7 +157,7 @@ entries:
     end:
       line: 65
       col: 0
-  hash: bd476771d729520d
+  hash: d70cd5b9039fa128
   context_hash: de7cc417de1b3246
 - key: dofile
   kind:
@@ -170,7 +170,7 @@ entries:
     end:
       line: 76
       col: 0
-  hash: '17eaac532d0d8b7f'
+  hash: c825642b6b44c7c5
   context_hash: de7cc417de1b3246
 - key: error
   kind:
@@ -183,7 +183,7 @@ entries:
     end:
       line: 89
       col: 0
-  hash: '2ed38bdf5647d7e6'
+  hash: '81879d09ef03c7c5'
   context_hash: de7cc417de1b3246
 - key: _G
   kind:
@@ -196,7 +196,7 @@ entries:
     end:
       line: 97
       col: 0
-  hash: ed6170e60c7d1e6c
+  hash: bdd640b6033d9688
   context_hash: de7cc417de1b3246
 - key: getmetatable
   kind:
@@ -209,7 +209,7 @@ entries:
     end:
       line: 104
       col: 0
-  hash: fb34ddfee855c143
+  hash: c0aa4bd98f53dd45
   context_hash: de7cc417de1b3246
 - key: ipairs
   kind:
@@ -222,7 +222,7 @@ entries:
     end:
       line: 114
       col: 0
-  hash: '81cc1b7ba3316736'
+  hash: f7e9dd303f83d75c
   context_hash: de7cc417de1b3246
 - key: std.loadmode.item.b
   kind:
@@ -274,7 +274,7 @@ entries:
     end:
       line: 153
       col: 0
-  hash: '4ab0788de1108e49'
+  hash: '9b1f3f8370f55492'
   context_hash: de7cc417de1b3246
 - key: loadstring
   kind:
@@ -287,7 +287,7 @@ entries:
     end:
       line: 166
       col: 0
-  hash: '284dd88d29965057'
+  hash: '94e585d72018ef76'
   context_hash: de7cc417de1b3246
 - key: loadfile
   kind:
@@ -300,7 +300,7 @@ entries:
     end:
       line: 177
       col: 0
-  hash: '2509b32c0559be2b'
+  hash: f973f805658a8a32
   context_hash: de7cc417de1b3246
 - key: module
   kind:
@@ -313,7 +313,7 @@ entries:
     end:
       line: 195
       col: 0
-  hash: b87ca1c9dd074609
+  hash: '6614bca90915024f'
   context_hash: de7cc417de1b3246
 - key: next
   kind:
@@ -326,7 +326,7 @@ entries:
     end:
       line: 216
       col: 0
-  hash: '0c06915c244a9fc7'
+  hash: '431cf1e327403b46'
   context_hash: de7cc417de1b3246
 - key: pairs
   kind:
@@ -339,7 +339,7 @@ entries:
     end:
       line: 234
       col: 0
-  hash: '05ca1b5e9206cb2b'
+  hash: '1a7f95aa4362e930'
   context_hash: de7cc417de1b3246
 - key: pcall
   kind:
@@ -352,7 +352,7 @@ entries:
     end:
       line: 246
       col: 0
-  hash: fc6ad4dc0c8dd9eb
+  hash: '1f340e7d3461d4ae'
   context_hash: de7cc417de1b3246
 - key: print
   kind:
@@ -365,7 +365,7 @@ entries:
     end:
       line: 257
       col: 35
-  hash: bb19bb9c28d20e8b
+  hash: '64fc74d7af730bec'
   context_hash: de7cc417de1b3246
 - key: rawequal
   kind:
@@ -378,7 +378,7 @@ entries:
     end:
       line: 263
       col: 0
-  hash: '40261afe4c5e2460'
+  hash: '0cec4f0b3fdbc099'
   context_hash: de7cc417de1b3246
 - key: rawget
   kind:
@@ -391,7 +391,7 @@ entries:
     end:
       line: 271
       col: 0
-  hash: '3d0e3f29adb567bf'
+  hash: '44a4244f6dfbe0ee'
   context_hash: de7cc417de1b3246
 - key: rawlen
   kind:
@@ -404,7 +404,7 @@ entries:
     end:
       line: 281
       col: 0
-  hash: '3bb95a6d6f8d5477'
+  hash: '07f69e94e4daa054'
   context_hash: de7cc417de1b3246
 - key: rawset
   kind:
@@ -417,7 +417,7 @@ entries:
     end:
       line: 289
       col: 0
-  hash: c726cd5a8ed490a8
+  hash: '16e809b0963bd346'
   context_hash: de7cc417de1b3246
 - key: require
   kind:
@@ -430,7 +430,7 @@ entries:
     end:
       line: 324
       col: 0
-  hash: '1dd74d532228044d'
+  hash: f661cf52fac913b3
   context_hash: de7cc417de1b3246
 - key: select
   kind:
@@ -443,7 +443,7 @@ entries:
     end:
       line: 333
       col: 0
-  hash: '70e32f7a9c40be28'
+  hash: '721ecd0e987e2ba7'
   context_hash: de7cc417de1b3246
 - key: setmetatable
   kind:
@@ -456,7 +456,7 @@ entries:
     end:
       line: 378
       col: 0
-  hash: '6cb51df47e53ad08'
+  hash: '25474b66521bebe3'
   context_hash: de7cc417de1b3246
 - key: tonumber
   kind:
@@ -469,7 +469,7 @@ entries:
     end:
       line: 398
       col: 0
-  hash: '23e0d900a782af87'
+  hash: '5d06a5a2b00378b0'
   context_hash: de7cc417de1b3246
 - key: tostring
   kind:
@@ -482,7 +482,7 @@ entries:
     end:
       line: 412
       col: 0
-  hash: adc137af28e53d37
+  hash: eb7a0cd064f9b7a3
   context_hash: de7cc417de1b3246
 - key: type
   kind:
@@ -495,7 +495,7 @@ entries:
     end:
       line: 431
       col: 0
-  hash: '0800556f7051218b'
+  hash: '495411a7e8486c06'
   context_hash: de7cc417de1b3246
 - key: _VERSION
   kind:
@@ -508,7 +508,7 @@ entries:
     end:
       line: 437
       col: 75
-  hash: d70840f86031589a
+  hash: '5ebfbf79a1551aa8'
   context_hash: de7cc417de1b3246
 - key: xpcall
   kind:
@@ -521,7 +521,7 @@ entries:
     end:
       line: 443
       col: 0
-  hash: '8f9f463f8371a2f0'
+  hash: dc8a1c68d79dae75
   context_hash: de7cc417de1b3246
 - key: _ENV
   kind:
@@ -534,7 +534,7 @@ entries:
     end:
       line: 469
       col: 0
-  hash: '450d61ac9994e275'
+  hash: '0e721e4ff07c6e6b'
   context_hash: ff924cd5098e706f
 - key: setfenv
   kind:
@@ -547,7 +547,7 @@ entries:
     end:
       line: 477
       col: 0
-  hash: '79ac6333c6044892'
+  hash: d6216fe88e8cd676
   context_hash: de7cc417de1b3246
 - key: setfenv.param.f
   kind:
@@ -586,7 +586,7 @@ entries:
     end:
       line: 484
       col: 0
-  hash: '3c8b579e5297fcd6'
+  hash: '7ec4ca6b1f97e9ee'
   context_hash: de7cc417de1b3246
 - key: getfenv.param.f
   kind:

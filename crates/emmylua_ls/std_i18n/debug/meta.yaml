@@ -14,7 +14,7 @@ entries:
     end:
       line: 26
       col: 62
-  hash: '5728b52db9e5f2ff'
+  hash: '0fe4e22e6bd16e8b'
   context_hash: de7cc417de1b3246
 - key: debuglib.getfenv
   kind:
@@ -27,7 +27,7 @@ entries:
     end:
       line: 33
       col: 0
-  hash: '91e912d2bf6683e5'
+  hash: e319ed191ab2753e
   context_hash: de7cc417de1b3246
 - key: debuglib.gethook
   kind:
@@ -40,7 +40,7 @@ entries:
     end:
       line: 42
       col: 0
-  hash: df523859e51a83d8
+  hash: '49af4e4a2801028a'
   context_hash: de7cc417de1b3246
 - key: debuglib.InfoWhat.item.n
   kind:
@@ -157,7 +157,7 @@ entries:
     end:
       line: 96
       col: 0
-  hash: a340fa432951e50a
+  hash: '7980d3ed291cc366'
   context_hash: de7cc417de1b3246
 - key: debuglib.getlocal@>5.2,JIT
   kind:
@@ -170,7 +170,7 @@ entries:
     end:
       line: 125
       col: 0
-  hash: defd75cacb5f645b
+  hash: '4b73d2bc58010347'
   context_hash: de7cc417de1b3246
 - key: debuglib.getlocal@5.1
   kind:
@@ -183,7 +183,7 @@ entries:
     end:
       line: 147
       col: 0
-  hash: '07f5462f1e8865d3'
+  hash: '2c536048630738b5'
   context_hash: de7cc417de1b3246
 - key: debuglib.getmetatable
   kind:
@@ -196,7 +196,7 @@ entries:
     end:
       line: 159
       col: 0
-  hash: '410e3c69b1af1d28'
+  hash: '301cc1a982007cb9'
   context_hash: de7cc417de1b3246
 - key: debuglib.getregistry
   kind:
@@ -209,7 +209,7 @@ entries:
     end:
       line: 166
       col: 0
-  hash: '8976bf1110d1f1ea'
+  hash: ad4fd6b084028bec
   context_hash: de7cc417de1b3246
 - key: debuglib.getupvalue
   kind:
@@ -222,7 +222,7 @@ entries:
     end:
       line: 177
       col: 0
-  hash: '982c779504f348a1'
+  hash: '0ed79123390e675c'
   context_hash: de7cc417de1b3246
 - key: debuglib.getuservalue
   kind:
@@ -235,7 +235,7 @@ entries:
     end:
       line: 187
       col: 0
-  hash: '139b3595baa85765'
+  hash: '8f1463c1c4d29816'
   context_hash: de7cc417de1b3246
 - key: debuglib.setcstacklimit
   kind:
@@ -248,7 +248,7 @@ entries:
     end:
       line: 201
       col: 0
-  hash: '026fa4d8ce9ac37a'
+  hash: dd787cc43dc8df6e
   context_hash: de7cc417de1b3246
 - key: debuglib.setfenv
   kind:
@@ -261,7 +261,7 @@ entries:
     end:
       line: 209
       col: 0
-  hash: '0cd7bfb647fe6ac9'
+  hash: '0b8d594813fd815a'
   context_hash: de7cc417de1b3246
 - key: debuglib.Hookmask.item.c
   kind:
@@ -313,7 +313,7 @@ entries:
     end:
       line: 242
       col: 0
-  hash: baa9120640597b69
+  hash: '30b0a0a8d96678be'
   context_hash: de7cc417de1b3246
 - key: debuglib.setlocal
   kind:
@@ -326,7 +326,7 @@ entries:
     end:
       line: 256
       col: 0
-  hash: '6b7612b243606250'
+  hash: '74eff9cb66dcfec3'
   context_hash: de7cc417de1b3246
 - key: debuglib.setmetatable
   kind:
@@ -339,7 +339,7 @@ entries:
     end:
       line: 267
       col: 0
-  hash: '441c3f569ab9675b'
+  hash: '241d133343fed058'
   context_hash: de7cc417de1b3246
 - key: debuglib.setupvalue
   kind:
@@ -352,7 +352,7 @@ entries:
     end:
       line: 278
       col: 0
-  hash: ad4178b7dc4b78b6
+  hash: c4902d4d7ac0710a
   context_hash: de7cc417de1b3246
 - key: debuglib.setuservalue
   kind:
@@ -365,7 +365,7 @@ entries:
     end:
       line: 288
       col: 0
-  hash: '23156e0556f56b1a'
+  hash: cdc0c0b3d876bc8a
   context_hash: db5e2c86b41bac5c
 - key: debuglib.traceback
   kind:
@@ -378,7 +378,7 @@ entries:
     end:
       line: 302
       col: 0
-  hash: '7295f50d331bbd1f'
+  hash: eae2c98c3517346d
   context_hash: '75684757332beac5'
 - key: debuglib.traceback.param.thread
   kind:
@@ -430,7 +430,7 @@ entries:
     end:
       line: 317
       col: 0
-  hash: b28a436780522b2e
+  hash: '94420ce99695ae21'
   context_hash: a9890306a2dd729d
 - key: debuglib.upvaluejoin
   kind:
@@ -443,5 +443,5 @@ entries:
     end:
       line: 327
       col: 0
-  hash: '8bcd6fd7914cb62e'
+  hash: '8fdc4bfee2b1f0d9'
   context_hash: de7cc417de1b3246
