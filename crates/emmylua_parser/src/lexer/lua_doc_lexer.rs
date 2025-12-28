@@ -643,9 +643,7 @@ impl LuaDocLexer<'_> {
                 reader.eat_while(|ch| ch.is_ascii_digit());
                 LuaTokenKind::TkInt
             }
-            ch if is_name_start(ch) => {
-                reader.bump();
-                reader.eat_while(is_name_continue);
+            ch if is_name_start(ch) || ch == '`' => {
                 let (text, _) = read_doc_name(reader);
                 if text == "nil" {
                     LuaTokenKind::TkNil

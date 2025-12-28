@@ -155,8 +155,6 @@ fn parse_primary_type(p: &mut LuaDocParser) -> DocParseResult {
         LuaTokenKind::TkLeftBrace => parse_object_or_mapped_type(p),
         LuaTokenKind::TkLeftBracket => {
             // 需要区分特性使用和元组类型
-            // 如果 `[` 后面看起来像特性使用,且 `]` 后还有类型,则解析为特性 + 类型
-            // 否则解析为元组类型
             if is_attribute_use(p) {
                 parse_type_with_attribute(p)
             } else {
