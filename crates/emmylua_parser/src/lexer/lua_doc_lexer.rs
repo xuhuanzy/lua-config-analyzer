@@ -646,7 +646,7 @@ impl LuaDocLexer<'_> {
             ch if is_name_start(ch) => {
                 reader.bump();
                 reader.eat_while(is_name_continue);
-                let text = reader.current_text();
+                let (text, _) = read_doc_name(reader);
                 if text == "nil" {
                     LuaTokenKind::TkNil
                 } else {

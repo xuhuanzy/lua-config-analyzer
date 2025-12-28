@@ -3446,12 +3446,14 @@ Syntax(Chunk)@0..60
         ---@type array<[ref("item.TbItem")] integer>
         ---@type array<integer>
         ---@type array<[integer]>
+
+        ---@param [v.ref] a number
         "#;
         // print_ast(code);
 
         let result = r#"
-Syntax(Chunk)@0..217
-  Syntax(Block)@0..217
+Syntax(Chunk)@0..253
+  Syntax(Block)@0..253
     Token(TkEndOfLine)@0..1 "\n"
     Token(TkWhitespace)@1..9 "        "
     Syntax(Comment)@9..88
@@ -3557,7 +3559,26 @@ Syntax(Chunk)@0..217
               Token(TkRightBracket)@206..207 "]"
           Token(TkGt)@207..208 ">"
     Token(TkEndOfLine)@208..209 "\n"
-    Token(TkWhitespace)@209..217 "        "
+    Token(TkEndOfLine)@209..210 "\n"
+    Token(TkWhitespace)@210..218 "        "
+    Syntax(Comment)@218..244
+      Token(TkDocStart)@218..222 "---@"
+      Syntax(DocTagParam)@222..244
+        Token(TkTagParam)@222..227 "param"
+        Token(TkWhitespace)@227..228 " "
+        Syntax(DocTagAttributeUse)@228..235
+          Token(TkLeftBracket)@228..229 "["
+          Syntax(DocAttributeUse)@229..234
+            Syntax(TypeName)@229..234
+              Token(TkName)@229..234 "v.ref"
+          Token(TkRightBracket)@234..235 "]"
+        Token(TkWhitespace)@235..236 " "
+        Token(TkName)@236..237 "a"
+        Token(TkWhitespace)@237..238 " "
+        Syntax(TypeName)@238..244
+          Token(TkName)@238..244 "number"
+    Token(TkEndOfLine)@244..245 "\n"
+    Token(TkWhitespace)@245..253 "        "
         "#;
         assert_ast_eq!(code, result);
     }
