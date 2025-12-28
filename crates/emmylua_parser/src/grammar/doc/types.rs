@@ -153,7 +153,16 @@ fn parse_simple_type(p: &mut LuaDocParser) -> DocParseResult {
 fn parse_primary_type(p: &mut LuaDocParser) -> DocParseResult {
     match p.current_token() {
         LuaTokenKind::TkLeftBrace => parse_object_or_mapped_type(p),
-        LuaTokenKind::TkLeftBracket => parse_tuple_type(p),
+        LuaTokenKind::TkLeftBracket => {
+            // 需要区分特性使用和元组类型
+            // 如果 `[` 后面看起来像特性使用,且 `]` 后还有类型,则解析为特性 + 类型
+            // 否则解析为元组类型
+            if is_attribute_use(p) {
+                parse_type_with_attribute(p)
+            } else {
+                parse_tuple_type(p)
+            }
+        }
         LuaTokenKind::TkLeftParen => parse_paren_type(p),
         LuaTokenKind::TkString
         | LuaTokenKind::TkInt
@@ -296,6 +305,101 @@ fn is_mapped_type(p: &LuaDocParser) -> bool {
             _ => {}
         }
     }
+}
+
+/// 判断 `[` 是否为特性使用
+/// 特性使用的特征:
+/// 1. `[` 后跟名称(可能有括号调用)
+/// 2. 可能有逗号分隔的多个特性
+/// 3. `]` 后必须还有类型声明
+///
+/// 如果 `]` 后没有类型,则强制视为元组类型
+/// 如果 `]` 后有类型,则强制视为特性使用
+fn is_attribute_use(p: &LuaDocParser) -> bool {
+    let mut lexer = p.lexer.clone();
+    let mut paren_depth = 0;
+
+    // 跳过 `[`
+    lexer.lex();
+
+    loop {
+        let kind = lexer.lex();
+        match kind {
+            // 跳过空白
+            LuaTokenKind::TkWhitespace
+            | LuaTokenKind::TkEndOfLine
+            | LuaTokenKind::TkDocContinue => {
+                continue;
+            }
+            // 括号深度跟踪
+            LuaTokenKind::TkLeftParen => {
+                paren_depth += 1;
+            }
+            LuaTokenKind::TkRightParen => {
+                if paren_depth > 0 {
+                    paren_depth -= 1;
+                }
+            }
+            // 找到右括号
+            LuaTokenKind::TkRightBracket => {
+                if paren_depth == 0 {
+                    break;
+                }
+            }
+            // 如果遇到逗号且在顶层(paren_depth == 0),继续查找
+            LuaTokenKind::TkComma => {
+                if paren_depth == 0 {
+                    // 继续,可能是多个特性
+                    continue;
+                }
+            }
+            // 文件结束
+            LuaTokenKind::TkEof => {
+                return false;
+            }
+            // 其他 token 继续扫描
+            _ => {}
+        }
+    }
+
+    // 现在检查 `]` 后是否有类型
+    loop {
+        let kind = lexer.lex();
+        match kind {
+            // 跳过空白
+            LuaTokenKind::TkWhitespace
+            | LuaTokenKind::TkEndOfLine
+            | LuaTokenKind::TkDocContinue => {
+                continue;
+            }
+            // 如果 `]` 后是类型 token,则是特性使用
+            LuaTokenKind::TkName
+            | LuaTokenKind::TkLeftBrace
+            | LuaTokenKind::TkLeftParen
+            | LuaTokenKind::TkString
+            | LuaTokenKind::TkInt
+            | LuaTokenKind::TkTrue
+            | LuaTokenKind::TkFalse
+            | LuaTokenKind::TkStringTemplateType
+            | LuaTokenKind::TkDots => {
+                return true;
+            }
+            // 其他情况视为元组类型
+            _ => {
+                return false;
+            }
+        }
+    }
+}
+
+/// 解析带特性的类型: [attribute] type
+fn parse_type_with_attribute(p: &mut LuaDocParser) -> DocParseResult {
+    // 先解析特性使用
+    use super::tag::parse_tag_attribute_use;
+    parse_tag_attribute_use(p, false)?;
+
+    // 然后解析类型
+    parse_type(p)
 }
 
 // <name> : <type>

@@ -3424,4 +3424,162 @@ Syntax(Chunk)@0..60
 
         assert_ast_eq!(code, result);
     }
+
+    #[test]
+    #[ignore]
+    fn test_attribute() {
+        print_ast(
+            r#"
+        ---@type array<[ref("item.TbItem")] integer>
+        ---@type array<integer>
+        ---@type array<[integer]>
+        "#,
+        );
+    }
+
+    #[test]
+    fn test_attribute_embedded() {
+        let code = r#"
+        ---@generic [attribute] T, [attribute] R
+        ---@param [attribute] a number
+
+        ---@type array<[ref("item.TbItem")] integer>
+        ---@type array<integer>
+        ---@type array<[integer]>
+        "#;
+        // print_ast(code);
+
+        let result = r#"
+Syntax(Chunk)@0..217
+  Syntax(Block)@0..217
+    Token(TkEndOfLine)@0..1 "\n"
+    Token(TkWhitespace)@1..9 "        "
+    Syntax(Comment)@9..88
+      Token(TkDocStart)@9..13 "---@"
+      Syntax(DocTagGeneric)@13..49
+        Token(TkTagGeneric)@13..20 "generic"
+        Token(TkWhitespace)@20..21 " "
+        Syntax(DocGenericDeclareList)@21..49
+          Syntax(DocGenericParameter)@21..34
+            Syntax(DocTagAttributeUse)@21..32
+              Token(TkLeftBracket)@21..22 "["
+              Syntax(DocAttributeUse)@22..31
+                Syntax(TypeName)@22..31
+                  Token(TkName)@22..31 "attribute"
+              Token(TkRightBracket)@31..32 "]"
+            Token(TkWhitespace)@32..33 " "
+            Token(TkName)@33..34 "T"
+          Token(TkComma)@34..35 ","
+          Token(TkWhitespace)@35..36 " "
+          Syntax(DocGenericParameter)@36..49
+            Syntax(DocTagAttributeUse)@36..47
+              Token(TkLeftBracket)@36..37 "["
+              Syntax(DocAttributeUse)@37..46
+                Syntax(TypeName)@37..46
+                  Token(TkName)@37..46 "attribute"
+              Token(TkRightBracket)@46..47 "]"
+            Token(TkWhitespace)@47..48 " "
+            Token(TkName)@48..49 "R"
+      Token(TkEndOfLine)@49..50 "\n"
+      Token(TkWhitespace)@50..58 "        "
+      Token(TkDocStart)@58..62 "---@"
+      Syntax(DocTagParam)@62..88
+        Token(TkTagParam)@62..67 "param"
+        Token(TkWhitespace)@67..68 " "
+        Syntax(DocTagAttributeUse)@68..79
+          Token(TkLeftBracket)@68..69 "["
+          Syntax(DocAttributeUse)@69..78
+            Syntax(TypeName)@69..78
+              Token(TkName)@69..78 "attribute"
+          Token(TkRightBracket)@78..79 "]"
+        Token(TkWhitespace)@79..80 " "
+        Token(TkName)@80..81 "a"
+        Token(TkWhitespace)@81..82 " "
+        Syntax(TypeName)@82..88
+          Token(TkName)@82..88 "number"
+    Token(TkEndOfLine)@88..89 "\n"
+    Token(TkEndOfLine)@89..90 "\n"
+    Token(TkWhitespace)@90..98 "        "
+    Syntax(Comment)@98..208
+      Token(TkDocStart)@98..102 "---@"
+      Syntax(DocTagType)@102..142
+        Token(TkTagType)@102..106 "type"
+        Token(TkWhitespace)@106..107 " "
+        Syntax(TypeGeneric)@107..142
+          Syntax(TypeName)@107..112
+            Token(TkName)@107..112 "array"
+          Token(TkLt)@112..113 "<"
+          Syntax(DocTypeList)@113..141
+            Syntax(DocTagAttributeUse)@113..133
+              Token(TkLeftBracket)@113..114 "["
+              Syntax(DocAttributeUse)@114..132
+                Syntax(TypeName)@114..117
+                  Token(TkName)@114..117 "ref"
+                Syntax(DocAttributeCallArgList)@117..132
+                  Token(TkLeftParen)@117..118 "("
+                  Syntax(LiteralExpr)@118..131
+                    Token(TkString)@118..131 "\"item.TbItem\""
+                  Token(TkRightParen)@131..132 ")"
+              Token(TkRightBracket)@132..133 "]"
+            Token(TkWhitespace)@133..134 " "
+            Syntax(TypeName)@134..141
+              Token(TkName)@134..141 "integer"
+          Token(TkGt)@141..142 ">"
+      Token(TkEndOfLine)@142..143 "\n"
+      Token(TkWhitespace)@143..151 "        "
+      Token(TkDocStart)@151..155 "---@"
+      Syntax(DocTagType)@155..174
+        Token(TkTagType)@155..159 "type"
+        Token(TkWhitespace)@159..160 " "
+        Syntax(TypeGeneric)@160..174
+          Syntax(TypeName)@160..165
+            Token(TkName)@160..165 "array"
+          Token(TkLt)@165..166 "<"
+          Syntax(DocTypeList)@166..173
+            Syntax(TypeName)@166..173
+              Token(TkName)@166..173 "integer"
+          Token(TkGt)@173..174 ">"
+      Token(TkEndOfLine)@174..175 "\n"
+      Token(TkWhitespace)@175..183 "        "
+      Token(TkDocStart)@183..187 "---@"
+      Syntax(DocTagType)@187..208
+        Token(TkTagType)@187..191 "type"
+        Token(TkWhitespace)@191..192 " "
+        Syntax(TypeGeneric)@192..208
+          Syntax(TypeName)@192..197
+            Token(TkName)@192..197 "array"
+          Token(TkLt)@197..198 "<"
+          Syntax(DocTypeList)@198..207
+            Syntax(TypeTuple)@198..207
+              Token(TkLeftBracket)@198..199 "["
+              Syntax(TypeName)@199..206
+                Token(TkName)@199..206 "integer"
+              Token(TkRightBracket)@206..207 "]"
+          Token(TkGt)@207..208 ">"
+    Token(TkEndOfLine)@208..209 "\n"
+    Token(TkWhitespace)@209..217 "        "
+        "#;
+        assert_ast_eq!(code, result);
+    }
+
+    #[test]
+    fn test_tuple_vs_attribute() {
+        // 测试元组类型 - `]` 后没有类型
+        let tuple_code = r#"
+        ---@type [string, number]
+        "#;
+        print_ast(tuple_code);
+
+        // 测试特性 + 类型 - `]` 后有类型
+        let attr_code = r#"
+        ---@type [readonly] string
+        "#;
+        print_ast(attr_code);
+
+        // 测试在泛型中的特性 + 类型
+        let generic_attr_code = r#"
+        ---@type Map<[ref("key")] string, [ref("value")] number>
+        "#;
+        print_ast(generic_attr_code);
+    }
 }

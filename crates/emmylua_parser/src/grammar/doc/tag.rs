@@ -146,8 +146,13 @@ pub(super) fn parse_generic_decl_list(
 // A ...
 // A ... : type
 // A ... extends type
+// [attribute] A ...
 fn parse_generic_param(p: &mut LuaDocParser) -> DocParseResult {
     let m = p.mark(LuaSyntaxKind::DocGenericParameter);
+    // 允许泛型附带特性
+    if p.current_token() == LuaTokenKind::TkLeftBracket {
+        parse_tag_attribute_use(p, false)?;
+    }
     expect_token(p, LuaTokenKind::TkName)?;
     if p.current_token() == LuaTokenKind::TkDots {
         p.bump();
@@ -312,10 +317,14 @@ fn parse_tag_type(p: &mut LuaDocParser) -> DocParseResult {
 // ---@param a number
 // ---@param a? number
 // ---@param ... string
+// ---@param [attribute] a number
 fn parse_tag_param(p: &mut LuaDocParser) -> DocParseResult {
     p.set_lexer_state(LuaDocLexerState::Normal);
     let m = p.mark(LuaSyntaxKind::DocTagParam);
     p.bump();
+    if p.current_token() == LuaTokenKind::TkLeftBracket {
+        parse_tag_attribute_use(p, false)?;
+    }
     if matches!(
         p.current_token(),
         LuaTokenKind::TkName | LuaTokenKind::TkDots
@@ -699,9 +708,9 @@ fn parse_type_attribute(p: &mut LuaDocParser) -> DocParseResult {
     Ok(m.complete(p))
 }
 
-// ---@[attribute(arg1, arg2, ...)]
-// ---@[attribute]
-// ---@[attribute1, attribute2, ...]
+// ---@[a(arg1, arg2, ...)]
+// ---@[a]
+// ---@[a, b, ...]
 // ---@generic [attribute] T
 pub fn parse_tag_attribute_use(p: &mut LuaDocParser, allow_description: bool) -> DocParseResult {
     let m = p.mark(LuaSyntaxKind::DocTagAttributeUse);
