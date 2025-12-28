@@ -208,29 +208,10 @@ fn check_local_stat(
 pub fn check_table_expr(
     context: &mut DiagnosticContext,
     semantic_model: &SemanticModel,
-    decl_node: NodeOrToken<LuaSyntaxNode, LuaSyntaxToken>,
+    _decl_node: NodeOrToken<LuaSyntaxNode, LuaSyntaxToken>,
     table_expr: &LuaExpr,
     table_type: Option<&LuaType>, // 记录的类型
 ) -> Option<bool> {
-    // 检查是否附加了元数据以跳过诊断
-    if let Some(semantic_decl) = semantic_model.find_decl(decl_node, SemanticDeclLevel::default()) {
-        if let Some(property) = semantic_model
-            .get_db()
-            .get_property_index()
-            .get_property(&semantic_decl)
-        {
-            if let Some(lsp_optimization) = property.find_attribute_use("lsp_optimization") {
-                if let Some(LuaType::DocStringConst(code)) =
-                    lsp_optimization.get_param_by_name("code")
-                {
-                    if code.as_ref() == "check_table_field" {
-                        return Some(false);
-                    }
-                };
-            }
-        }
-    }
-
     let table_type = table_type?;
     if let Some(table_expr) = LuaTableExpr::cast(table_expr.syntax().clone()) {
         return check_table_expr_content(context, semantic_model, table_type, &table_expr);
@@ -245,17 +226,11 @@ fn check_table_expr_content(
     table_type: &LuaType,
     table_expr: &LuaTableExpr,
 ) -> Option<bool> {
-    const MAX_CHECK_COUNT: usize = 250;
-    let mut check_count = 0;
     let mut has_diagnostic = false;
 
     let fields = table_expr.get_fields().collect::<Vec<_>>();
 
     for (idx, field) in fields.iter().enumerate() {
-        check_count += 1;
-        if check_count > MAX_CHECK_COUNT {
-            return Some(has_diagnostic);
-        }
         let Some(value_expr) = field.get_value_expr() else {
             continue;
         };
