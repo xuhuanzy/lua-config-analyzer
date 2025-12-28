@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
-#[derive(Default)]
 pub struct EmmyrcRuntime {
     /// Lua version.
     #[serde(default)]
@@ -30,6 +29,20 @@ pub struct EmmyrcRuntime {
     /// Special symbols.
     #[serde(default)]
     pub special: HashMap<String, EmmyrcSpecialSymbol>,
+}
+
+impl Default for EmmyrcRuntime {
+    fn default() -> Self {
+        Self {
+            version: EmmyrcLuaVersion::LuaLatest,
+            require_like_function: Vec::new(),
+            framework_versions: Vec::new(),
+            extensions: vec![".luac".to_string()],
+            require_pattern: Vec::new(),
+            nonstandard_symbol: Vec::new(),
+            special: HashMap::new(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema, Clone, Copy, PartialEq, Eq, Default)]

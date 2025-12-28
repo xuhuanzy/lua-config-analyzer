@@ -360,6 +360,11 @@ pub fn load_emmy_config(config_root: Option<PathBuf>, client_config: ClientConfi
         emmyrc.pre_process_emmyrc(workspace_root);
     }
 
+    // 强制支持 .luac 文件
+    if !emmyrc.runtime.extensions.contains(&".luac".to_string()) {
+        emmyrc.runtime.extensions.push(".luac".to_string());
+    }
+
     log::info!("loaded emmyrc complete");
     emmyrc.into()
 }
