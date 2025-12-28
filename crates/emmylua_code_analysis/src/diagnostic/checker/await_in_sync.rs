@@ -9,7 +9,9 @@ pub struct AwaitInSyncChecker;
 impl Checker for AwaitInSyncChecker {
     const CODES: &[DiagnosticCode] = &[DiagnosticCode::AwaitInSync];
 
+    #[allow(unused)]
     fn check(context: &mut DiagnosticContext, semantic_model: &SemanticModel) {
+        return;
         let root = semantic_model.get_root().clone();
         for call_expr in root.descendants::<LuaCallExpr>() {
             check_call_in_async(context, semantic_model, call_expr.clone());

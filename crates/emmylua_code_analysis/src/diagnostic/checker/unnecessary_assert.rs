@@ -9,7 +9,9 @@ pub struct UnnecessaryAssertChecker;
 impl Checker for UnnecessaryAssertChecker {
     const CODES: &[DiagnosticCode] = &[DiagnosticCode::UnnecessaryAssert];
 
+    #[allow(unused)]
     fn check(context: &mut DiagnosticContext, semantic_model: &SemanticModel) {
+        return;
         let root = semantic_model.get_root().clone();
         for call_expr in root.descendants::<LuaCallExpr>() {
             if call_expr.is_assert() {

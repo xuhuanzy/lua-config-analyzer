@@ -9,7 +9,9 @@ pub struct UnnecessaryIfChecker;
 impl Checker for UnnecessaryIfChecker {
     const CODES: &[DiagnosticCode] = &[DiagnosticCode::UnnecessaryIf];
 
+    #[allow(unused)]
     fn check(context: &mut DiagnosticContext, semantic_model: &SemanticModel) {
+        return;
         let root = semantic_model.get_root().clone();
         for if_statement in root.descendants::<LuaIfStat>() {
             if let Some(condition) = if_statement.get_condition_expr() {
