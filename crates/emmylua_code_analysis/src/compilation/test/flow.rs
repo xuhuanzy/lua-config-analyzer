@@ -1004,6 +1004,9 @@ end
     #[test]
     fn test_issue_524() {
         let mut ws = VirtualWorkspace::new();
+        let mut emmyrc = ws.get_emmyrc();
+        emmyrc.strict.array_index = true;
+        ws.analysis.update_config(emmyrc.into());
         ws.def(
             r#"
             ---@type string[]

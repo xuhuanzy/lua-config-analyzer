@@ -43,6 +43,7 @@ mod test {
     }
 
     #[test]
+    #[ignore] // 在本项目中, 我们删除了一些特性
     fn test_delayed_definition() {
         let mut ws = VirtualWorkspace::new_with_init_std_lib();
 

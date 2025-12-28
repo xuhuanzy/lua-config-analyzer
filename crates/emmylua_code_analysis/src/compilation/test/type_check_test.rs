@@ -6,7 +6,9 @@ mod test {
     #[test]
     fn test_issue_421() {
         let mut ws = VirtualWorkspace::new();
-
+        let mut emmyrc = ws.get_emmyrc();
+        emmyrc.strict.array_index = true;
+        ws.analysis.update_config(emmyrc.into());
         assert!(ws.check_code_for(
             DiagnosticCode::AssignTypeMismatch,
             r#"

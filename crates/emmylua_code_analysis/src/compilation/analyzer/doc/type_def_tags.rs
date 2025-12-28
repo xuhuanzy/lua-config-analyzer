@@ -11,6 +11,7 @@ use super::{
     DocAnalyzer, infer_type::infer_type, preprocess_description, tags::find_owner_closure,
 };
 use crate::GenericParam;
+use crate::compilation::analyzer::doc::attribute_tags::infer_attribute_uses;
 use crate::compilation::analyzer::doc::tags::report_orphan_tag;
 use crate::{
     LuaTypeCache, LuaTypeDeclId,
@@ -207,11 +208,16 @@ fn get_generic_params(
         } else {
             continue;
         };
+        let attributes = if let Some(attribute_use) = param.get_tag_attribute_use() {
+            infer_attribute_uses(analyzer, attribute_use)
+        } else {
+            None
+        };
         let type_ref = param
             .get_type()
             .map(|type_ref| infer_type(analyzer, type_ref));
 
-        params_result.push(GenericParam::new(name, type_ref, None));
+        params_result.push(GenericParam::new(name, type_ref, attributes));
     }
 
     params_result

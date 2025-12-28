@@ -570,6 +570,9 @@ return t
     #[test]
     fn test_pending() {
         let mut ws = VirtualWorkspace::new();
+        let mut emmyrc = ws.get_emmyrc();
+        emmyrc.strict.array_index = true;
+        ws.analysis.update_config(emmyrc.into());
         assert!(ws.check_code_for_namespace(
             DiagnosticCode::AssignTypeMismatch,
             r#"

@@ -47,6 +47,7 @@ mod test {
     fn test_issue_594() {
         let mut ws = VirtualWorkspace::new_with_init_std_lib();
         let mut emmyrc = ws.get_emmyrc();
+        emmyrc.strict.array_index = true;
         emmyrc.runtime.version = EmmyrcLuaVersion::Lua51;
         ws.analysis.update_config(emmyrc.into());
         assert!(ws.check_code_for(
