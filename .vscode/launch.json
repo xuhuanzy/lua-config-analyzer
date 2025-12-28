@@ -11,11 +11,11 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=emmylua_ls",
+                    "--bin=luaconfig_ls",
                     "--package=emmylua_ls",
                 ],
                 "filter": {
-                    "name": "emmylua_ls",
+                    "name": "luaconfig_ls",
                     "kind": "bin"
                 }
             },
@@ -23,7 +23,7 @@
                 "-c",
                 "tcp",
                 "--port",
-                "5007",
+                "5008",
                 "--log-level",
                 "debug"
             ],

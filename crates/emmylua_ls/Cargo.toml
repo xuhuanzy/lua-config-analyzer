@@ -55,7 +55,8 @@ googletest.workspace = true
 
 
 [[bin]]
-name = "emmylua_ls"
+name = "luaconfig_ls"
+path = "src/bin/emmylua_ls.rs"
 required-features = ["cli"]
 
 [features]
