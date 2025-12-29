@@ -53,8 +53,8 @@
 -- ### 参数:
 --
 -- - `indexs`: 索引字段列表, 可以是字符串或字符串数组.
--- - `mode`: 索引模式, 仅在提供多个索引字段时有效, 可以是"solo"(独立)或"union"(联合), 默认值为"solo".
----@attribute t.index(indexs: string|string[], mode?: "solo" | "union")
+-- - `mode`: 索引模式, 仅在提供多个索引字段时有效, 可以是"union"(联合)或"solo"(独立), 默认值为"union".
+---@attribute t.index(indexs: string|string[], mode?: "union" | "solo")
 
 
 -- 配置表模式.
