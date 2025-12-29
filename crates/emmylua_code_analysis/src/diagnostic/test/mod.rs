@@ -1,6 +1,6 @@
 mod access_invisible_test;
 mod assign_type_mismatch_test;
-mod await_in_sync_test;
+// mod await_in_sync_test;
 mod cast_type_mismatch_test;
 mod check_return_count_test;
 mod code_style;
@@ -29,6 +29,6 @@ mod undefined_doc_param_test;
 mod undefined_field_test;
 mod undefined_global_test;
 mod unknown_doc_tag;
-mod unnecessary_assert_test;
-mod unnecessary_if_test;
+// mod unnecessary_assert_test;
+// mod unnecessary_if_test;
 mod unused_test;

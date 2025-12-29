@@ -737,6 +737,7 @@ mod test {
     }
 
     #[test]
+    #[ignore] // 配置表工具不需要这个检查
     fn test_export() {
         let mut ws = VirtualWorkspace::new();
         ws.def_file(

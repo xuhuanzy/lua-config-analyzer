@@ -36,9 +36,10 @@ mod test {
         );
 
         let ty = ws.expr_ty("GG.fun");
+        // FileId 从 13 -> 14, 因为我们为 std 库插入了配置库内置定义
         assert_eq!(
             format!("{:?}", ty),
-            "Signature(LuaSignatureId { file_id: FileId { id: 13 }, position: 76 })"
+            "Signature(LuaSignatureId { file_id: FileId { id: 14 }, position: 76 })"
         );
     }
 
