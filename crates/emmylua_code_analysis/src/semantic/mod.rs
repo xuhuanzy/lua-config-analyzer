@@ -1,3 +1,4 @@
+pub mod attributes;
 mod cache;
 mod decl;
 mod generic;

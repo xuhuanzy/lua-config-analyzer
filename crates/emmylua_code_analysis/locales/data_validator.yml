@@ -1,0 +1,5 @@
+_version: 2
+Duplicate primary key `%{name}`:
+  en: Duplicate primary key `%{name}`
+  zh_CN: 重复的主键 `%{name}`
+  zh_HK: 重複的主鍵 `%{name}`

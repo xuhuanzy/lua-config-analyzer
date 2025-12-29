@@ -5,10 +5,11 @@ use emmylua_parser::{LuaAst, LuaAstNode, LuaTableExpr};
 use rowan::TextRange;
 
 use crate::{
-    DiagnosticCode, LuaAttributeUse, LuaMemberKey, LuaMemberOwner, LuaSemanticDeclId, LuaType,
-    LuaTypeDeclId, RenderLevel, SemanticModel,
+    DiagnosticCode, LuaMemberKey, LuaMemberOwner, LuaSemanticDeclId, LuaType, LuaTypeDeclId,
+    RenderLevel, SemanticModel,
     diagnostic::checker::{Checker, DiagnosticContext},
     find_index_operations, humanize_type,
+    semantic::attributes::{ConfigTableIndexMode, TIndexAttribute},
 };
 
 /* 检查主键是否重复 */
@@ -28,11 +29,7 @@ impl Checker for DuplicatePrimaryKeyChecker {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConfigTableIndexMode {
-    Solo,
-    Union,
-}
+// ConfigTableIndexMode 已移至 semantic::attributes 模块
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConfigTableIndexKeys {
@@ -101,15 +98,14 @@ pub fn get_config_table_keys(
             .get_property_index()
             .get_property(&LuaSemanticDeclId::TypeDecl(config_table.clone()))?;
 
-        let index_attr = property.find_attribute_use("t.index");
-        let Some(index_attr) = index_attr else {
+        let Some(index_attr) = TIndexAttribute::find_in(property) else {
             // 根据 member_id 的位置排序, 确保顺序稳定
             members.sort_by_key(|m| m.get_sort_key());
             let default_index = members.first()?.get_key().clone();
             return ConfigTableIndexKeys::new(vec![default_index], ConfigTableIndexMode::Union);
         };
 
-        let (keys, mode) = resolve_config_table_index_from_attr(index_attr, &members);
+        let (keys, mode) = resolve_config_table_index_from_attr(&index_attr, &members);
         let keys = if keys.is_empty() {
             // 根据 member_id 的位置排序, 确保顺序稳定
             members.sort_by_key(|m| m.get_sort_key());
@@ -126,14 +122,11 @@ pub fn get_config_table_keys(
 }
 
 fn resolve_config_table_index_from_attr(
-    index_attr: &LuaAttributeUse,
+    index_attr: &TIndexAttribute,
     bean_members: &[&crate::LuaMember],
 ) -> (Vec<LuaMemberKey>, ConfigTableIndexMode) {
-    let indexs_ty = index_attr
-        .get_param_by_name("indexs")
-        .or_else(|| index_attr.args.first().and_then(|(_, t)| t.as_ref()));
-
-    let mut keys = indexs_ty
+    let mut keys = index_attr
+        .get_indexs()
         .map(collect_index_member_keys_from_type)
         .unwrap_or_default();
 
@@ -149,7 +142,7 @@ fn resolve_config_table_index_from_attr(
     }
 
     let mode = if uniq.len() > 1 {
-        parse_config_table_index_mode(index_attr)
+        index_attr.get_mode()
     } else {
         ConfigTableIndexMode::Union
     };
@@ -178,22 +171,6 @@ fn collect_index_member_names_from_type(ty: &LuaType) -> Vec<smol_str::SmolStr> 
             .flat_map(collect_index_member_names_from_type)
             .collect(),
         _ => Vec::new(),
-    }
-}
-
-fn parse_config_table_index_mode(index_attr: &LuaAttributeUse) -> ConfigTableIndexMode {
-    let Some(mode_ty) = index_attr.get_param_by_name("mode") else {
-        return ConfigTableIndexMode::Union;
-    };
-
-    let mode_str = match mode_ty {
-        LuaType::DocStringConst(s) | LuaType::StringConst(s) => s.as_ref().as_str(),
-        _ => return ConfigTableIndexMode::Union,
-    };
-
-    match mode_str {
-        "solo" => ConfigTableIndexMode::Solo,
-        _ => ConfigTableIndexMode::Union,
     }
 }
 
@@ -229,12 +206,6 @@ fn check_duplicate_primary_key(
     Some(())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct SoloIndexValue {
-    key: LuaMemberKey,
-    value: LuaType,
-}
-
 fn check_duplicate_primary_key_solo(
     context: &mut DiagnosticContext,
     semantic_model: &SemanticModel,
@@ -243,7 +214,7 @@ fn check_duplicate_primary_key_solo(
 ) -> Option<()> {
     let db = semantic_model.get_db();
 
-    let mut index_map: HashMap<SoloIndexValue, Vec<TextRange>> = HashMap::new();
+    let mut index_map: HashMap<(LuaMemberKey, LuaType), Vec<TextRange>> = HashMap::new();
 
     for field in fields {
         let row_typ = semantic_model
@@ -262,16 +233,13 @@ fn check_duplicate_primary_key_solo(
             };
 
             index_map
-                .entry(SoloIndexValue {
-                    key: member_info.key.clone(),
-                    value: member_info.typ.clone(),
-                })
+                .entry((member_info.key.clone(), member_info.typ.clone()))
                 .or_default()
                 .push(range);
         }
     }
 
-    for (index_value, ranges) in index_map {
+    for ((key, value), ranges) in index_map {
         if ranges.len() <= 1 {
             continue;
         }
@@ -279,18 +247,18 @@ fn check_duplicate_primary_key_solo(
         let name = if keys.len() > 1 {
             format!(
                 "{}={}",
-                index_value.key.to_path(),
-                humanize_type(db, &index_value.value, RenderLevel::Simple)
+                key.to_path(),
+                humanize_type(db, &value, RenderLevel::Simple)
             )
         } else {
-            humanize_type(db, &index_value.value, RenderLevel::Simple)
+            humanize_type(db, &value, RenderLevel::Simple)
         };
 
         for range in ranges {
             context.add_diagnostic(
                 DiagnosticCode::DuplicatePrimaryKey,
                 range,
-                t!("Duplicate primary key `%{name}`.", name = name).to_string(),
+                t!("Duplicate primary key `%{name}`", name = name).to_string(),
                 None,
             );
         }
@@ -367,7 +335,7 @@ fn check_duplicate_primary_key_union(
             context.add_diagnostic(
                 DiagnosticCode::DuplicatePrimaryKey,
                 range,
-                t!("Duplicate primary key `%{name}`.", name = name).to_string(),
+                t!("Duplicate primary key `%{name}`", name = name).to_string(),
                 None,
             );
         }
