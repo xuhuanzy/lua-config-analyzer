@@ -23,10 +23,10 @@ pub fn analyze_local_stat(analyzer: &mut LuaAnalyzer, local_stat: LuaLocalStat) 
         for local_name in name_list {
             let position = local_name.get_position();
             let decl_id = LuaDeclId::new(analyzer.file_id, position);
-            // 标记了延迟定义属性, 此时将跳过绑定类型, 等待第一次赋值时再绑定类型
-            if has_delayed_definition_attribute(analyzer, decl_id) {
-                return Some(());
-            }
+            // // 标记了延迟定义属性, 此时将跳过绑定类型, 等待第一次赋值时再绑定类型
+            // if has_delayed_definition_attribute(analyzer, decl_id) {
+            //     return Some(());
+            // }
             analyzer
                 .db
                 .get_type_index_mut()
@@ -516,6 +516,7 @@ fn special_assign_pattern(
     Some(())
 }
 
+#[allow(dead_code)]
 fn has_delayed_definition_attribute(analyzer: &LuaAnalyzer, decl_id: LuaDeclId) -> bool {
     if let Some(property) = analyzer
         .db
