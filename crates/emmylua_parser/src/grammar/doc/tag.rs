@@ -781,30 +781,7 @@ fn parse_attribute_arg_list(p: &mut LuaDocParser) -> DocParseResult {
 
 // 解析单个属性参数
 fn parse_attribute_arg(p: &mut LuaDocParser) -> DocParseResult {
-    let m = p.mark(LuaSyntaxKind::LiteralExpr);
-
-    // TODO: 添加具名参数支持(name: value)
-    match p.current_token() {
-        LuaTokenKind::TkInt
-        | LuaTokenKind::TkFloat
-        | LuaTokenKind::TkComplex
-        | LuaTokenKind::TkNil
-        | LuaTokenKind::TkTrue
-        | LuaTokenKind::TkFalse
-        | LuaTokenKind::TkDots
-        | LuaTokenKind::TkString
-        | LuaTokenKind::TkLongString => {
-            p.bump();
-        }
-        _ => {
-            return Err(LuaParseError::doc_error_from(
-                "Expected attribute argument value",
-                p.current_token_range(),
-            ));
-        }
-    };
-
-    Ok(m.complete(p))
+    parse_type(p)
 }
 
 // function_name--[[@<type>, <type>...]](...args)

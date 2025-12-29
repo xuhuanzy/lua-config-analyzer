@@ -615,6 +615,10 @@ impl LuaDocLexer<'_> {
                 reader.eat_while(is_doc_whitespace);
                 LuaTokenKind::TkWhitespace
             }
+            ':' => {
+                reader.bump();
+                LuaTokenKind::TkColon
+            }
             '(' => {
                 reader.bump();
                 LuaTokenKind::TkLeftParen
@@ -623,6 +627,10 @@ impl LuaDocLexer<'_> {
                 reader.bump();
                 LuaTokenKind::TkRightParen
             }
+            '[' => {
+                reader.bump();
+                LuaTokenKind::TkLeftBracket
+            }
             ',' => {
                 reader.bump();
                 LuaTokenKind::TkComma
@@ -630,6 +638,32 @@ impl LuaDocLexer<'_> {
             ']' => {
                 reader.bump();
                 LuaTokenKind::TkRightBracket
+            }
+            '{' => {
+                reader.bump();
+                LuaTokenKind::TkLeftBrace
+            }
+            '}' => {
+                reader.bump();
+                LuaTokenKind::TkRightBrace
+            }
+            '.' => {
+                reader.bump();
+                if reader.current_char() == '.' && reader.next_char() == '.' {
+                    reader.bump();
+                    reader.bump();
+                    LuaTokenKind::TkDots
+                } else {
+                    LuaTokenKind::TkDot
+                }
+            }
+            '+' => {
+                reader.bump();
+                LuaTokenKind::TkPlus
+            }
+            '-' => {
+                reader.bump();
+                LuaTokenKind::TkMinus
             }
             ch if ch == '"' || ch == '\'' => {
                 reader.bump();
@@ -644,12 +678,12 @@ impl LuaDocLexer<'_> {
                 LuaTokenKind::TkInt
             }
             ch if is_name_start(ch) || ch == '`' => {
-                let (text, _) = read_doc_name(reader);
-                if text == "nil" {
-                    LuaTokenKind::TkNil
-                } else {
-                    LuaTokenKind::TkName
+                let (text, str_tpl) = read_doc_name(reader);
+                if str_tpl {
+                    return LuaTokenKind::TkStringTemplateType;
                 }
+
+                to_token_or_name(text)
             }
             _ => {
                 reader.bump();

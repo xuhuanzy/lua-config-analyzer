@@ -2916,11 +2916,11 @@ Syntax(Chunk)@0..105
             Token(TkName)@76..87 "check_point"
           Syntax(DocAttributeCallArgList)@87..95
             Token(TkLeftParen)@87..88 "("
-            Syntax(LiteralExpr)@88..91
+            Syntax(TypeLiteral)@88..91
               Token(TkString)@88..91 "\"a\""
             Token(TkComma)@91..92 ","
             Token(TkWhitespace)@92..93 " "
-            Syntax(LiteralExpr)@93..94
+            Syntax(TypeLiteral)@93..94
               Token(TkInt)@93..94 "0"
             Token(TkRightParen)@94..95 ")"
         Token(TkRightBracket)@95..96 "]"
@@ -3430,9 +3430,7 @@ Syntax(Chunk)@0..60
     fn test_attribute() {
         print_ast(
             r#"
-        ---@type array<[ref("item.TbItem")] integer>
-        ---@type array<integer>
-        ---@type array<[integer]>
+        ---@[t.index(["key1", "key2"])]
         "#,
         );
     }
@@ -3519,7 +3517,7 @@ Syntax(Chunk)@0..253
                   Token(TkName)@114..117 "ref"
                 Syntax(DocAttributeCallArgList)@117..132
                   Token(TkLeftParen)@117..118 "("
-                  Syntax(LiteralExpr)@118..131
+                  Syntax(TypeLiteral)@118..131
                     Token(TkString)@118..131 "\"item.TbItem\""
                   Token(TkRightParen)@131..132 ")"
               Token(TkRightBracket)@132..133 "]"

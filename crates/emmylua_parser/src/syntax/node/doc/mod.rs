@@ -11,7 +11,7 @@ use super::{
     LuaAst, LuaBinaryOpToken, LuaLiteralToken, LuaNameToken, LuaNumberToken, LuaStringToken,
 };
 use crate::{
-    LuaAstChildren, LuaAstToken, LuaAstTokenChildren, LuaKind, LuaLiteralExpr, LuaSyntaxNode,
+    LuaAstChildren, LuaAstToken, LuaAstTokenChildren, LuaKind, LuaSyntaxNode,
     kind::{LuaSyntaxKind, LuaTokenKind},
     syntax::traits::LuaAstNode,
 };
@@ -561,7 +561,7 @@ impl LuaAstNode for LuaDocAttributeCallArgList {
 }
 
 impl LuaDocAttributeCallArgList {
-    pub fn get_args(&self) -> LuaAstChildren<LuaLiteralExpr> {
+    pub fn get_args(&self) -> LuaAstChildren<LuaDocType> {
         self.children()
     }
 }
