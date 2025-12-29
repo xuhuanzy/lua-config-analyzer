@@ -45,11 +45,18 @@ pub fn analyze_class(analyzer: &mut DocAnalyzer, tag: LuaDocTagClass) -> Option<
         add_generic_index(analyzer, generic_params, &tag);
     }
 
+    // 是否是 ConfigTable 子类
+    let mut is_config_table = false;
+
     if let Some(supers) = tag.get_supers() {
         for super_doc_type in supers.get_types() {
             let super_type = infer_type(analyzer, super_doc_type);
             if super_type.is_unknown() {
                 continue;
+            }
+
+            if crate::is_config_table_type(&super_type) {
+                is_config_table = true;
             }
 
             analyzer.db.get_type_index_mut().add_super_type(
@@ -58,6 +65,18 @@ pub fn analyze_class(analyzer: &mut DocAnalyzer, tag: LuaDocTagClass) -> Option<
                 super_type,
             );
         }
+    }
+
+    // 如果是 ConfigTable 子类, 标记需要后续解析索引键
+    if is_config_table {
+        analyzer.context.add_unresolve(
+            crate::compilation::analyzer::unresolve::UnResolveConfigTableIndex {
+                file_id,
+                config_table_id: class_decl_id.clone(),
+            }
+            .into(),
+            crate::InferFailReason::None,
+        );
     }
 
     add_description_for_type_decl(analyzer, &class_decl_id, tag.get_descriptions());

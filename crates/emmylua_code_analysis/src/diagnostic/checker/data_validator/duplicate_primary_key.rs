@@ -5,8 +5,8 @@ use emmylua_parser::{LuaAst, LuaAstNode, LuaTableExpr};
 use rowan::TextRange;
 
 use crate::{
-    DiagnosticCode, LuaMemberKey, LuaMemberOwner, LuaSemanticDeclId, LuaType, LuaTypeDeclId,
-    RenderLevel, SemanticModel,
+    ConfigTableIndexKeys, DiagnosticCode, LuaMemberKey, LuaMemberOwner, LuaSemanticDeclId, LuaType,
+    LuaTypeDeclId, RenderLevel, SemanticModel,
     diagnostic::checker::{Checker, DiagnosticContext},
     find_index_operations, humanize_type,
     semantic::attributes::{ConfigTableIndexMode, TIndexAttribute},
@@ -29,37 +29,6 @@ impl Checker for DuplicatePrimaryKeyChecker {
     }
 }
 
-// ConfigTableIndexMode 已移至 semantic::attributes 模块
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ConfigTableIndexKeys {
-    Solo(Vec<LuaMemberKey>),
-    Union(Vec<LuaMemberKey>),
-}
-
-impl ConfigTableIndexKeys {
-    fn new(keys: Vec<LuaMemberKey>, mode: ConfigTableIndexMode) -> Option<Self> {
-        if keys.is_empty() {
-            return None;
-        }
-
-        if keys.len() == 1 {
-            return Some(Self::Solo(keys));
-        }
-
-        Some(match mode {
-            ConfigTableIndexMode::Solo => Self::Solo(keys),
-            ConfigTableIndexMode::Union => Self::Union(keys),
-        })
-    }
-
-    fn keys(&self) -> &[LuaMemberKey] {
-        match self {
-            Self::Solo(keys) | Self::Union(keys) => keys,
-        }
-    }
-}
-
 /**
  * 获取配置表的主键
  */
@@ -73,52 +42,16 @@ pub fn get_config_table_keys(
         return None;
     };
 
-    if !semantic_model.is_sub_type_of(&config_table, &LuaTypeDeclId::new("ConfigTable")) {
+    if !semantic_model.is_sub_type_of(
+        &config_table,
+        &LuaTypeDeclId::new(crate::CONFIG_TABLE_TYPE_NAME),
+    ) {
         return None;
     }
 
-    let members =
-        find_index_operations(semantic_model.get_db(), &LuaType::Ref(config_table.clone()))?;
-    let members = members
-        .iter()
-        .filter(|member| matches!(member.key, LuaMemberKey::ExprType(LuaType::Integer)))
-        .collect::<Vec<_>>();
-    let member = members.first()?;
-    // 确定成员类型为 Bean
-    if let LuaType::Ref(bean) = &member.typ {
-        if !semantic_model.is_sub_type_of(bean, &LuaTypeDeclId::new("Bean")) {
-            return None;
-        }
-        let mut members = semantic_model
-            .get_db()
-            .get_member_index()
-            .get_members(&LuaMemberOwner::Type(bean.clone()))?
-            .to_vec();
-        let property = db
-            .get_property_index()
-            .get_property(&LuaSemanticDeclId::TypeDecl(config_table.clone()))?;
-
-        let Some(index_attr) = TIndexAttribute::find_in(property) else {
-            // 根据 member_id 的位置排序, 确保顺序稳定
-            members.sort_by_key(|m| m.get_sort_key());
-            let default_index = members.first()?.get_key().clone();
-            return ConfigTableIndexKeys::new(vec![default_index], ConfigTableIndexMode::Union);
-        };
-
-        let (keys, mode) = resolve_config_table_index_from_attr(&index_attr, &members);
-        let keys = if keys.is_empty() {
-            // 根据 member_id 的位置排序, 确保顺序稳定
-            members.sort_by_key(|m| m.get_sort_key());
-            let default_index = members.first()?.get_key().clone();
-            vec![default_index]
-        } else {
-            keys
-        };
-
-        return ConfigTableIndexKeys::new(keys, mode);
-    }
-
-    None
+    db.get_config_index()
+        .get_config_table_keys(&config_table)
+        .cloned()
 }
 
 fn resolve_config_table_index_from_attr(

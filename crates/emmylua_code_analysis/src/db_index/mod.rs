@@ -1,3 +1,4 @@
+mod config;
 mod declaration;
 mod dependency;
 mod diagnostic;
@@ -17,6 +18,7 @@ mod r#type;
 use std::sync::Arc;
 
 use crate::{Emmyrc, FileId, Vfs};
+pub use config::*;
 pub use declaration::*;
 pub use dependency::LuaDependencyIndex;
 pub use diagnostic::{AnalyzeError, DiagnosticAction, DiagnosticActionKind, DiagnosticIndex};
@@ -35,6 +37,7 @@ pub use r#type::*;
 
 #[derive(Debug)]
 pub struct DbIndex {
+    config_index: LuaConfigIndex,
     decl_index: LuaDeclIndex,
     references_index: LuaReferenceIndex,
     types_index: LuaTypeIndex,
@@ -62,6 +65,7 @@ impl Default for DbIndex {
 impl DbIndex {
     pub fn new() -> Self {
         Self {
+            config_index: LuaConfigIndex::new(),
             decl_index: LuaDeclIndex::new(),
             references_index: LuaReferenceIndex::new(),
             types_index: LuaTypeIndex::new(),
@@ -92,6 +96,14 @@ impl DbIndex {
 
     pub fn get_metatable_index(&self) -> &LuaMetatableIndex {
         &self.metatable_index
+    }
+
+    pub fn get_config_index(&self) -> &LuaConfigIndex {
+        &self.config_index
+    }
+
+    pub fn get_config_index_mut(&mut self) -> &mut LuaConfigIndex {
+        &mut self.config_index
     }
 
     pub fn get_decl_index_mut(&mut self) -> &mut LuaDeclIndex {
@@ -211,6 +223,7 @@ impl DbIndex {
 
 impl LuaIndex for DbIndex {
     fn remove(&mut self, file_id: FileId) {
+        self.config_index.remove(file_id);
         self.decl_index.remove(file_id);
         self.references_index.remove(file_id);
         self.types_index.remove(file_id);
@@ -227,6 +240,7 @@ impl LuaIndex for DbIndex {
     }
 
     fn clear(&mut self) {
+        self.config_index.clear();
         self.decl_index.clear();
         self.references_index.clear();
         self.types_index.clear();
