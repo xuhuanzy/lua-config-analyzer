@@ -3,7 +3,7 @@ use emmylua_parser::{
 };
 
 use crate::{
-    AnalyzeError, DiagnosticCode, LuaDeclId,
+    AnalyzeError, DiagnosticCode, LuaDeclId, LuaTypeDeclId,
     compilation::analyzer::doc::{
         attribute_tags::analyze_tag_attribute_use, property_tags::analyze_readonly,
         type_def_tags::analyze_attribute,
@@ -216,6 +216,12 @@ pub fn get_owner_id(
         LuaAst::LuaDocTagField(tag) => {
             let member_id = LuaMemberId::new(tag.get_syntax_id(), analyzer.file_id);
             Some(LuaSemanticDeclId::Member(member_id))
+        }
+        LuaAst::LuaDocTagClass(class) => {
+            let name_token = class.get_name_token()?;
+            Some(LuaSemanticDeclId::TypeDecl(LuaTypeDeclId::new(
+                name_token.get_name_text(),
+            )))
         }
         _ => {
             let closure = find_owner_closure(analyzer)?;

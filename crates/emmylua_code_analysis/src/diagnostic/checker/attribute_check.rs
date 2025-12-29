@@ -4,9 +4,7 @@ use crate::{
     DiagnosticCode, DocTypeInferContext, LuaType, SemanticModel, TypeCheckFailReason,
     TypeCheckResult, diagnostic::checker::humanize_lint_type, infer_doc_type,
 };
-use emmylua_parser::{
-    LuaAstNode, LuaDocAttributeUse, LuaDocTagAttributeUse, LuaDocType, LuaExpr, LuaLiteralExpr,
-};
+use emmylua_parser::{LuaAstNode, LuaDocAttributeUse, LuaDocTagAttributeUse, LuaDocType};
 use rowan::TextRange;
 
 use super::{Checker, DiagnosticContext};
@@ -35,10 +33,8 @@ fn check_attribute_use(
     semantic_model: &SemanticModel,
     attribute_use: &LuaDocAttributeUse,
 ) -> Option<()> {
-    let attribute_type = infer_doc_type(
-        DocTypeInferContext::new(semantic_model.get_db(), semantic_model.get_file_id()),
-        &LuaDocType::Name(attribute_use.get_type()?),
-    );
+    let doc_ctx = DocTypeInferContext::new(semantic_model.get_db(), semantic_model.get_file_id());
+    let attribute_type = infer_doc_type(doc_ctx, &LuaDocType::Name(attribute_use.get_type()?));
     let LuaType::Ref(type_id) = attribute_type else {
         return None;
     };
@@ -69,7 +65,7 @@ fn check_param_count(
     context: &mut DiagnosticContext,
     def_params: &[(String, Option<LuaType>)],
     attribute_use: &LuaDocAttributeUse,
-    args: &[LuaLiteralExpr],
+    args: &[LuaDocType],
 ) -> Option<()> {
     let call_args_count = args.len();
     // 调用参数少于定义参数, 需要考虑可空参数
@@ -128,13 +124,12 @@ fn check_param(
     context: &mut DiagnosticContext,
     semantic_model: &SemanticModel,
     def_params: &[(String, Option<LuaType>)],
-    args: Vec<LuaLiteralExpr>,
+    args: Vec<LuaDocType>,
 ) -> Option<()> {
+    let doc_ctx = DocTypeInferContext::new(semantic_model.get_db(), semantic_model.get_file_id());
     let mut call_arg_types = Vec::new();
     for arg in &args {
-        let arg_type = semantic_model
-            .infer_expr(LuaExpr::LiteralExpr(arg.clone()))
-            .ok()?;
+        let arg_type = infer_doc_type(doc_ctx, arg);
         call_arg_types.push(arg_type);
     }
 

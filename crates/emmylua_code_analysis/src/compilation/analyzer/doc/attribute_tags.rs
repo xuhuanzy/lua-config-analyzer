@@ -1,8 +1,7 @@
 use emmylua_parser::{
-    LuaAst, LuaAstNode, LuaDocTagAttributeUse, LuaDocType, LuaExpr, LuaKind, LuaLiteralExpr,
-    LuaLiteralToken, LuaSyntaxKind, LuaSyntaxNode, LuaTokenKind, NumberResult,
+    LuaAst, LuaAstNode, LuaDocTagAttributeUse, LuaDocType, LuaExpr, LuaKind, LuaSyntaxKind,
+    LuaSyntaxNode, LuaTokenKind,
 };
-use smol_str::SmolStr;
 
 use crate::{
     LuaAttributeUse, LuaSemanticDeclId, LuaType,
@@ -60,7 +59,12 @@ pub fn infer_attribute_uses(
         if let LuaType::Ref(type_id) = attribute_type {
             let arg_types: Vec<LuaType> = attribute_use
                 .get_arg_list()
-                .map(|arg_list| arg_list.get_args().map(infer_attribute_arg_type).collect())
+                .map(|arg_list| {
+                    arg_list
+                        .get_args()
+                        .map(|arg| infer_type(analyzer, arg))
+                        .collect()
+                })
                 .unwrap_or_default();
             let param_names = analyzer
                 .db
@@ -103,30 +107,6 @@ pub fn infer_attribute_uses(
     Some(result)
 }
 
-fn infer_attribute_arg_type(expr: LuaLiteralExpr) -> LuaType {
-    if let Some(literal_token) = expr.get_literal() {
-        match literal_token {
-            LuaLiteralToken::String(str_token) => {
-                return LuaType::DocStringConst(SmolStr::new(str_token.get_value()).into());
-            }
-            LuaLiteralToken::Number(number_token) => {
-                if let NumberResult::Int(i) = number_token.get_number_value() {
-                    return LuaType::DocIntegerConst(i);
-                } else {
-                    return LuaType::Number;
-                }
-            }
-            LuaLiteralToken::Bool(bool_token) => {
-                return LuaType::DocBooleanConst(bool_token.is_true());
-            }
-            LuaLiteralToken::Nil(_) => return LuaType::Nil,
-            LuaLiteralToken::Dots(_) => return LuaType::Any,
-            LuaLiteralToken::Question(_) => return LuaType::Nil,
-        }
-    }
-    LuaType::Unknown
-}
-
 /// 寻找特性的所有者
 fn attribute_use_get_owner(
     analyzer: &mut DocAnalyzer,
@@ -147,7 +127,8 @@ fn attribute_find_doc(comment: &LuaSyntaxNode) -> Option<LuaSyntaxNode> {
                 LuaKind::Syntax(
                     LuaSyntaxKind::DocTagField
                     | LuaSyntaxKind::DocTagParam
-                    | LuaSyntaxKind::DocTagReturn,
+                    | LuaSyntaxKind::DocTagReturn
+                    | LuaSyntaxKind::DocTagClass,
                 ) => {
                     if let Some(node) = sibling.as_node() {
                         return Some(node.clone());
