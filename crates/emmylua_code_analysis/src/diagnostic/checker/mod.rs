@@ -11,6 +11,7 @@ mod check_return_count;
 mod circle_doc_class;
 mod code_style;
 mod code_style_check;
+mod data_validator;
 mod deprecated;
 mod discard_returns;
 mod duplicate_field;
@@ -63,7 +64,7 @@ pub trait Checker {
     fn check(context: &mut DiagnosticContext, semantic_model: &SemanticModel);
 }
 
-fn run_check<T: Checker>(context: &mut DiagnosticContext, semantic_model: &SemanticModel) {
+pub fn run_check<T: Checker>(context: &mut DiagnosticContext, semantic_model: &SemanticModel) {
     if T::CODES
         .iter()
         .any(|code| context.is_checker_enable_by_code(code))
@@ -126,6 +127,8 @@ pub fn check_file(context: &mut DiagnosticContext, semantic_model: &SemanticMode
     );
     run_check::<readonly_check::ReadOnlyChecker>(context, semantic_model);
     run_check::<global_non_module::GlobalInNonModuleChecker>(context, semantic_model);
+
+    data_validator::check_data_validator(context, semantic_model);
     Some(())
 }
 

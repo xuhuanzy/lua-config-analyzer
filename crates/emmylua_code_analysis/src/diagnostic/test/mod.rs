@@ -4,6 +4,7 @@ mod await_in_sync_test;
 mod cast_type_mismatch_test;
 mod check_return_count_test;
 mod code_style;
+mod data_validator;
 mod disable_line_test;
 mod duplicate_field_test;
 mod duplicate_index_test;

@@ -17,7 +17,7 @@ pub fn find_index_operations(db: &DbIndex, prefix_type: &LuaType) -> FindMembers
     find_index_operations_guard(db, prefix_type, &InferGuard::new())
 }
 
-pub fn find_index_operations_guard(
+fn find_index_operations_guard(
     db: &DbIndex,
     prefix_type: &LuaType,
     infer_guard: &InferGuardRef,

@@ -114,6 +114,10 @@ pub enum DiagnosticCode {
     /// attribute-redundant-parameter
     AttributeRedundantParameter,
 
+    /* Data Validator */
+    /// duplicate-primary-key
+    DuplicatePrimaryKey,
+
     #[serde(other)]
     None,
 }
