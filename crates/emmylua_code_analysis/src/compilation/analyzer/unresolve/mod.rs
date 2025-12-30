@@ -2,12 +2,11 @@ mod check_reason;
 mod find_decl_function;
 mod resolve;
 mod resolve_closure;
-mod resolve_luaconfig;
 
 use std::collections::HashMap;
 
 use crate::{
-    FileId, InferFailReason, LuaMemberFeature, LuaSemanticDeclId, LuaTypeDeclId,
+    FileId, InferFailReason, LuaMemberFeature, LuaSemanticDeclId,
     compilation::analyzer::{AnalysisPipeline, unresolve::resolve::try_resolve_constructor},
     db_index::{DbIndex, LuaDeclId, LuaMemberId, LuaSignatureId},
     profile::Profile,
@@ -23,7 +22,6 @@ use resolve::{
 use resolve_closure::{
     try_resolve_call_closure_params, try_resolve_closure_parent_params, try_resolve_closure_return,
 };
-use resolve_luaconfig::try_resolve_config_table_index;
 
 use super::{AnalyzeContext, infer_cache_manager::InferCacheManager, lua::LuaReturnPoint};
 
@@ -206,9 +204,6 @@ fn try_resolve(
                     UnResolve::ClassCtor(un_resolve_constructor) => {
                         try_resolve_constructor(db, cache, un_resolve_constructor)
                     }
-                    UnResolve::ConfigTableIndex(un_resolve_config) => {
-                        try_resolve_config_table_index(db, cache, un_resolve_config)
-                    }
                 };
 
                 match resolve_result {
@@ -269,7 +264,6 @@ pub enum UnResolve {
     ModuleRef(Box<UnResolveModuleRef>),
     TableField(Box<UnResolveTableField>),
     ClassCtor(Box<UnResolveConstructor>),
-    ConfigTableIndex(Box<UnResolveConfigTableIndex>),
 }
 
 #[allow(dead_code)]
@@ -293,7 +287,6 @@ impl UnResolve {
             UnResolve::TableField(un_resolve_table_field) => Some(un_resolve_table_field.file_id),
             UnResolve::ModuleRef(_) => None,
             UnResolve::ClassCtor(un_resolve_constructor) => Some(un_resolve_constructor.file_id),
-            UnResolve::ConfigTableIndex(un_resolve_config) => Some(un_resolve_config.file_id),
         }
     }
 }
@@ -452,21 +445,5 @@ pub struct UnResolveConstructor {
 impl From<UnResolveConstructor> for UnResolve {
     fn from(un_resolve_constructor: UnResolveConstructor) -> Self {
         UnResolve::ClassCtor(Box::new(un_resolve_constructor))
-    }
-}
-
-/// ConfigTable 索引键解析任务
-///
-/// 当检测到类型继承自 ConfigTable 时, 添加此任务以在 unresolve 阶段
-/// 解析并缓存该 ConfigTable 的索引键信息.
-#[derive(Debug)]
-pub struct UnResolveConfigTableIndex {
-    pub file_id: FileId,
-    pub config_table_id: LuaTypeDeclId,
-}
-
-impl From<UnResolveConfigTableIndex> for UnResolve {
-    fn from(un_resolve_config: UnResolveConfigTableIndex) -> Self {
-        UnResolve::ConfigTableIndex(Box::new(un_resolve_config))
     }
 }

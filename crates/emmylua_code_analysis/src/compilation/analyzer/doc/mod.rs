@@ -71,7 +71,7 @@ pub struct DocAnalyzer<'a> {
     comment: LuaComment,
     root: LuaSyntaxNode,
     is_meta: bool,
-    context: &'a mut AnalyzeContext,
+    _context: &'a mut AnalyzeContext,
 }
 
 impl<'a> DocAnalyzer<'a> {
@@ -92,7 +92,7 @@ impl<'a> DocAnalyzer<'a> {
             comment,
             root,
             is_meta,
-            context,
+            _context: context,
         }
     }
 }

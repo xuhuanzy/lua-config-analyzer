@@ -274,6 +274,10 @@ impl LuaTypeIndex {
     pub fn get_type_cache(&self, owner: &LuaTypeOwner) -> Option<&LuaTypeCache> {
         self.types.get(owner)
     }
+
+    pub fn get_file_types(&self, file_id: &FileId) -> Option<&Vec<LuaTypeDeclId>> {
+        self.file_types.get(file_id)
+    }
 }
 
 impl LuaIndex for LuaTypeIndex {

@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    ConfigTablePkOccurrence, DiagnosticCode, LuaMemberKey, LuaType, RenderLevel, SemanticModel,
+    ConfigTablePkOccurrence, DiagnosticCode, LuaMemberKey, LuaType, LuaTypeDeclId, RenderLevel,
+    SemanticModel,
     diagnostic::checker::{Checker, DiagnosticContext},
     humanize_type,
 };
@@ -21,15 +22,16 @@ impl Checker for DuplicatePrimaryKeyChecker {
             return;
         };
 
-        let mut relevant_tables: HashSet<crate::LuaTypeDeclId> = HashSet::new();
+        // 当前文件中所有的 ConfigTable
+        let mut relevant_tables: HashSet<LuaTypeDeclId> = HashSet::new();
         for occ in occurrences.iter() {
             relevant_tables.insert(occ.get_config_table().clone());
         }
 
-        let mut solo_counts: HashMap<(crate::LuaTypeDeclId, LuaMemberKey, LuaType), u32> =
-            HashMap::new();
-        let mut union_counts: HashMap<(crate::LuaTypeDeclId, Vec<LuaType>), u32> = HashMap::new();
+        let mut solo_counts: HashMap<(LuaTypeDeclId, LuaMemberKey, LuaType), u32> = HashMap::new();
+        let mut union_counts: HashMap<(LuaTypeDeclId, Vec<LuaType>), u32> = HashMap::new();
 
+        // 遍历所有 ConfigTable 的索引键
         for occ in db.get_config_index().iter_config_table_pk_occurrences() {
             let config_table = occ.get_config_table();
             if !relevant_tables.contains(config_table) {

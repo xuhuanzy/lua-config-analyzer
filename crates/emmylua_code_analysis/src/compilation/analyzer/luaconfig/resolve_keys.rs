@@ -1,59 +1,55 @@
-//! 此模块并不是处理`lsp`的配置, 而是处理作为配置表专用的`lsp`语法部分
-
 use crate::{
-    InferFailReason, LuaMemberKey, LuaSemanticDeclId, LuaTypeDeclId,
-    db_index::{DbIndex, LuaMemberOwner, LuaType},
-    is_sub_type_of,
-    semantic::LuaInferCache,
+    ConfigTableIndexKeys, LuaMemberKey, LuaSemanticDeclId, LuaType,
+    db_index::DbIndex,
+    find_index_operations, is_sub_type_of,
+    semantic::attributes::{ConfigTableIndexMode, TIndexAttribute},
 };
 
-use super::{ResolveResult, UnResolveConfigTableIndex};
-
 /// 解析 ConfigTable 的索引键并缓存到 LuaConfigIndex
-pub fn try_resolve_config_table_index(
+pub fn resolve_config_table_index(
     db: &mut DbIndex,
-    _cache: &mut LuaInferCache,
-    unresolve: &mut UnResolveConfigTableIndex,
-) -> ResolveResult {
-    use crate::{
-        ConfigTableIndexKeys, find_index_operations,
-        semantic::attributes::{ConfigTableIndexMode, TIndexAttribute},
-    };
-
-    let file_id = unresolve.file_id;
-    let config_table_id = &unresolve.config_table_id;
+    file_id: crate::FileId,
+    config_table_id: &crate::LuaTypeDeclId,
+) {
+    use crate::db_index::LuaMemberOwner;
 
     // 检查是否已经缓存
     if db.get_config_index().has_config_table_keys(config_table_id) {
-        return Ok(());
+        return;
     }
 
     // 获取 ConfigTable 的 [int] 成员 (Bean 类型)
     let config_table_type = LuaType::Ref(config_table_id.clone());
-    let members = find_index_operations(db, &config_table_type).ok_or(InferFailReason::None)?;
-    let int_member = members
+    let Some(members) = find_index_operations(db, &config_table_type) else {
+        return;
+    };
+    let Some(int_member) = members
         .iter()
         .find(|m| matches!(m.key, LuaMemberKey::ExprType(LuaType::Integer)))
-        .ok_or(InferFailReason::None)?;
+    else {
+        return;
+    };
 
     // 确定成员类型为 Bean
     let LuaType::Ref(bean_id) = &int_member.typ else {
-        return Err(InferFailReason::None);
+        return;
     };
 
     // 检查是否是 Bean 的子类型 (递归检查父类)
-    let bean_type_id = LuaTypeDeclId::new(crate::BEAN_TYPE_NAME);
+    let bean_type_id = crate::LuaTypeDeclId::new(crate::BEAN_TYPE_NAME);
     let is_bean = is_sub_type_of(db, bean_id, &bean_type_id);
     if !is_bean {
-        return Err(InferFailReason::None);
+        return;
     }
 
     // 获取 Bean 的成员列表
-    let mut bean_members = db
+    let Some(bean_members_refs) = db
         .get_member_index()
         .get_members(&LuaMemberOwner::Type(bean_id.clone()))
-        .ok_or(InferFailReason::None)?
-        .to_vec();
+    else {
+        return;
+    };
+    let mut bean_members = bean_members_refs.to_vec();
 
     // 获取 ConfigTable 的 t.index 属性
     let property = db
@@ -67,11 +63,10 @@ pub fn try_resolve_config_table_index(
             if keys.is_empty() {
                 // 回退到默认: 使用第一个成员作为索引
                 bean_members.sort_by_key(|m| m.get_sort_key());
-                let default_key = bean_members
-                    .first()
-                    .ok_or(InferFailReason::None)?
-                    .get_key()
-                    .clone();
+                let Some(first) = bean_members.first() else {
+                    return;
+                };
+                let default_key = first.get_key().clone();
                 ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
             } else {
                 ConfigTableIndexKeys::new(keys, mode)
@@ -79,21 +74,19 @@ pub fn try_resolve_config_table_index(
         } else {
             // 没有 t.index 属性, 使用第一个成员作为默认索引
             bean_members.sort_by_key(|m| m.get_sort_key());
-            let default_key = bean_members
-                .first()
-                .ok_or(InferFailReason::None)?
-                .get_key()
-                .clone();
+            let Some(first) = bean_members.first() else {
+                return;
+            };
+            let default_key = first.get_key().clone();
             ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
         }
     } else {
         // 没有属性, 使用第一个成员作为默认索引
         bean_members.sort_by_key(|m| m.get_sort_key());
-        let default_key = bean_members
-            .first()
-            .ok_or(InferFailReason::None)?
-            .get_key()
-            .clone();
+        let Some(first) = bean_members.first() else {
+            return;
+        };
+        let default_key = first.get_key().clone();
         ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
     };
 
@@ -102,20 +95,13 @@ pub fn try_resolve_config_table_index(
         db.get_config_index_mut()
             .add_config_table_keys(file_id, config_table_id.clone(), keys);
     }
-
-    Ok(())
 }
 
 /// 从 t.index 属性解析索引键
 fn resolve_index_keys_from_attr(
-    index_attr: &crate::semantic::attributes::TIndexAttribute,
+    index_attr: &TIndexAttribute,
     bean_members: &[&crate::LuaMember],
-) -> (
-    Vec<LuaMemberKey>,
-    crate::semantic::attributes::ConfigTableIndexMode,
-) {
-    use crate::semantic::attributes::ConfigTableIndexMode;
-
+) -> (Vec<LuaMemberKey>, ConfigTableIndexMode) {
     let mut keys: Vec<LuaMemberKey> = index_attr
         .get_indexs()
         .map(|ty| {

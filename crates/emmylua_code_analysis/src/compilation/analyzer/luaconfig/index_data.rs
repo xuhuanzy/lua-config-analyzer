@@ -2,29 +2,12 @@ use emmylua_parser::{LuaAstNode, LuaChunk, LuaTableExpr};
 
 use crate::{
     ConfigTableIndexKeys, ConfigTablePkOccurrence, LuaSemanticDeclId, LuaType, LuaTypeCache,
-    compilation::analyzer::AnalysisPipeline, db_index::DbIndex, find_members_with_key, infer_expr,
-    profile::Profile,
+    db_index::DbIndex, find_members_with_key, infer_expr,
 };
 
-use super::{AnalyzeContext, infer_cache_manager::InferCacheManager};
+use super::super::infer_cache_manager::InferCacheManager;
 
-pub struct LuaConfigDataIndexPipeline;
-
-impl AnalysisPipeline for LuaConfigDataIndexPipeline {
-    fn analyze(db: &mut DbIndex, context: &mut AnalyzeContext) {
-        let _p = Profile::cond_new("luaconfig data index", context.tree_list.len() > 1);
-
-        let mut infer_manager = InferCacheManager::new();
-        let tree_list = context.tree_list.clone();
-        for in_filed_tree in tree_list.iter() {
-            let file_id = in_filed_tree.file_id;
-            let root = in_filed_tree.value.clone();
-            index_file(db, &mut infer_manager, file_id, root);
-        }
-    }
-}
-
-fn index_file(
+pub fn index_file(
     db: &mut DbIndex,
     infer_manager: &mut InferCacheManager,
     file_id: crate::FileId,
