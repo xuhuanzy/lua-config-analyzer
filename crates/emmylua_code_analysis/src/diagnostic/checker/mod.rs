@@ -11,7 +11,6 @@ mod check_return_count;
 mod circle_doc_class;
 mod code_style;
 mod code_style_check;
-mod data_validator;
 mod deprecated;
 mod discard_returns;
 mod duplicate_field;
@@ -23,6 +22,7 @@ mod generic;
 mod global_non_module;
 mod incomplete_signature_doc;
 mod local_const_reassign;
+mod luaconfig;
 mod missing_fields;
 mod need_check_nil;
 mod param_type_check;
@@ -128,7 +128,7 @@ pub fn check_file(context: &mut DiagnosticContext, semantic_model: &SemanticMode
     run_check::<readonly_check::ReadOnlyChecker>(context, semantic_model);
     run_check::<global_non_module::GlobalInNonModuleChecker>(context, semantic_model);
 
-    data_validator::check_data_validator(context, semantic_model);
+    luaconfig::check_luaconfig(context, semantic_model);
     Some(())
 }
 
