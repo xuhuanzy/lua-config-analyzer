@@ -10,4 +10,8 @@ pub fn check_luaconfig(context: &mut DiagnosticContext, semantic_model: &Semanti
         context,
         semantic_model,
     );
+    run_check::<data_validator::invalid_index_field::InvalidIndexFieldChecker>(
+        context,
+        semantic_model,
+    );
 }

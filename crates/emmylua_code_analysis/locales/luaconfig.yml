@@ -3,3 +3,7 @@ Duplicate primary key `%{name}`:
   en: Duplicate primary key `%{name}`
   zh_CN: 重复的主键 `%{name}`
   zh_HK: 重複的主鍵 `%{name}`
+Invalid index field `%{name}`:
+  en: Invalid index field `%{name}`
+  zh_CN: 无效的索引字段 `%{name}`
+  zh_HK: 無效的索引字段 `%{name}`

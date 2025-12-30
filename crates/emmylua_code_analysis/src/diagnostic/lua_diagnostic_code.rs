@@ -117,6 +117,8 @@ pub enum DiagnosticCode {
     /* Data Validator */
     /// duplicate-primary-key
     DuplicatePrimaryKey,
+    /// invalid-index-field
+    InvalidIndexField,
 
     #[serde(other)]
     None,
