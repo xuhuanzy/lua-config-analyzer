@@ -22,6 +22,7 @@
 ---@alias datetime number
 
 ---@class Bean
+---@field __tag__ string? # 可以有0到多个tag, 用于标识记录, 每个tag之间使用`,`分隔.
 
 ---@class ConfigTable
 
