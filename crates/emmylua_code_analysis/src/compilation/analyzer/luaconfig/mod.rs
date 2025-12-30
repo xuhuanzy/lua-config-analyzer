@@ -25,6 +25,7 @@ impl AnalysisPipeline for LuaConfigPipeline {
             for type_decl_id in type_decl_ids {
                 // 检查是否是 ConfigTable 的子类型
                 if is_sub_type_of(db, &type_decl_id, &config_table_type_id) {
+                    resolve_keys::resolve_config_table_mode(db, file_id, &type_decl_id);
                     resolve_keys::resolve_config_table_index(db, file_id, &type_decl_id);
                 }
             }

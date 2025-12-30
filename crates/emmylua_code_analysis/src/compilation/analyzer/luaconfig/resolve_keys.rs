@@ -2,7 +2,9 @@ use crate::{
     ConfigTableIndexKeys, LuaMemberKey, LuaSemanticDeclId, LuaType,
     db_index::DbIndex,
     find_index_operations, is_sub_type_of,
-    semantic::attributes::{ConfigTableIndexMode, TIndexAttribute},
+    semantic::attributes::{
+        ConfigTableIndexMode, ConfigTableMode, TIndexAttribute, TModeAttribute,
+    },
 };
 
 /// 解析 ConfigTable 的索引键并缓存到 LuaConfigIndex
@@ -17,6 +19,8 @@ pub fn resolve_config_table_index(
     if db.get_config_index().has_config_table_keys(config_table_id) {
         return;
     }
+
+    let table_mode = db.get_config_index().get_config_table_mode(config_table_id);
 
     // 获取 ConfigTable 的 [int] 成员 (Bean 类型)
     let config_table_type = LuaType::Ref(config_table_id.clone());
@@ -61,7 +65,23 @@ pub fn resolve_config_table_index(
             // 从 t.index 属性解析索引键
             let (keys, mode) = resolve_index_keys_from_attr(&index_attr, &bean_members);
             if keys.is_empty() {
-                // 回退到默认: 使用第一个成员作为索引
+                // 仅当 mode=map 时才回退到默认索引
+                if table_mode == ConfigTableMode::Map {
+                    bean_members.sort_by_key(|m| m.get_sort_key());
+                    let Some(first) = bean_members.first() else {
+                        return;
+                    };
+                    let default_key = first.get_key().clone();
+                    ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
+                } else {
+                    None
+                }
+            } else {
+                ConfigTableIndexKeys::new(keys, mode)
+            }
+        } else {
+            // 没有 t.index 属性, 仅当 mode=map 时才使用第一个成员作为默认索引
+            if table_mode == ConfigTableMode::Map {
                 bean_members.sort_by_key(|m| m.get_sort_key());
                 let Some(first) = bean_members.first() else {
                     return;
@@ -69,25 +89,21 @@ pub fn resolve_config_table_index(
                 let default_key = first.get_key().clone();
                 ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
             } else {
-                ConfigTableIndexKeys::new(keys, mode)
+                None
             }
-        } else {
-            // 没有 t.index 属性, 使用第一个成员作为默认索引
+        }
+    } else {
+        // 没有属性, 仅当 mode=map 时才使用第一个成员作为默认索引
+        if table_mode == ConfigTableMode::Map {
             bean_members.sort_by_key(|m| m.get_sort_key());
             let Some(first) = bean_members.first() else {
                 return;
             };
             let default_key = first.get_key().clone();
             ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
+        } else {
+            None
         }
-    } else {
-        // 没有属性, 使用第一个成员作为默认索引
-        bean_members.sort_by_key(|m| m.get_sort_key());
-        let Some(first) = bean_members.first() else {
-            return;
-        };
-        let default_key = first.get_key().clone();
-        ConfigTableIndexKeys::new(vec![default_key], ConfigTableIndexMode::Union)
     };
 
     // 缓存解析结果
@@ -95,6 +111,67 @@ pub fn resolve_config_table_index(
         db.get_config_index_mut()
             .add_config_table_keys(file_id, config_table_id.clone(), keys);
     }
+}
+
+/// 解析 ConfigTable 的 t.mode 并缓存到 LuaConfigIndex
+///
+/// 规则:
+/// - 任何时候以显式声明的 `t.mode` 为准
+/// - 未声明 `t.mode` 时:
+///   - 若 `t.index` 声明多个主键 -> `list`
+///   - 否则 -> `map`
+/// - `singleton` 仅在显式声明时生效 (不会被推断)
+pub fn resolve_config_table_mode(
+    db: &mut DbIndex,
+    file_id: crate::FileId,
+    config_table_id: &crate::LuaTypeDeclId,
+) {
+    if db.get_config_index().has_config_table_mode(config_table_id) {
+        return;
+    }
+
+    let property = db
+        .get_property_index()
+        .get_property(&LuaSemanticDeclId::TypeDecl(config_table_id.clone()));
+
+    let explicit_mode = property
+        .and_then(TModeAttribute::find_in)
+        .map(|attr| attr.get_mode());
+    if let Some(mode) = explicit_mode {
+        db.get_config_index_mut()
+            .add_config_table_mode(file_id, config_table_id.clone(), mode);
+        return;
+    }
+
+    let should_be_list = if let Some(property) = property {
+        if let Some(index_attr) = TIndexAttribute::find_in(property) {
+            if let Some(ty) = index_attr.get_indexs() {
+                let declared = collect_index_names_from_type(ty);
+                let mut uniq: Vec<smol_str::SmolStr> = Vec::with_capacity(declared.len());
+                for name in declared {
+                    if !uniq.contains(&name) {
+                        uniq.push(name);
+                    }
+                }
+                uniq.len() > 1
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    let inferred = if should_be_list {
+        ConfigTableMode::List
+    } else {
+        ConfigTableMode::Map
+    };
+
+    db.get_config_index_mut()
+        .add_config_table_mode(file_id, config_table_id.clone(), inferred);
 }
 
 /// 从 t.index 属性解析索引键
