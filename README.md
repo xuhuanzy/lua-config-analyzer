@@ -1,5 +1,3 @@
-<div align="center">
-
 # 🌟 Lua Config Analyzer
 
-专为`Luban`配置生成工具设计的`Lua`数据源分析器.
+专为游戏配置工具`Luban`设计的`Lua`数据源分析器.

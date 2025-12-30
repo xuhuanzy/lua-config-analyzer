@@ -1,4 +1,5 @@
 mod common;
+mod config_data;
 mod decl;
 mod doc;
 mod flow;
@@ -33,6 +34,7 @@ pub fn analyze(db: &mut DbIndex, need_analyzed_files: Vec<InFiled<LuaChunk>>, co
         run_analysis::<flow::FlowAnalysisPipeline>(db, &mut context);
         run_analysis::<lua::LuaAnalysisPipeline>(db, &mut context);
         run_analysis::<unresolve::UnResolveAnalysisPipeline>(db, &mut context);
+        run_analysis::<config_data::LuaConfigDataIndexPipeline>(db, &mut context);
     }
 }
 

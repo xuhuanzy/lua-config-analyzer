@@ -1,8 +1,10 @@
 mod config_table_index_keys;
+mod config_table_pk_occurrence;
 
 use std::collections::{HashMap, HashSet};
 
 pub use config_table_index_keys::ConfigTableIndexKeys;
+pub use config_table_pk_occurrence::ConfigTablePkOccurrence;
 
 use crate::{FileId, LuaType, LuaTypeDeclId, db_index::traits::LuaIndex};
 
@@ -34,6 +36,7 @@ pub fn is_bean_decl(id: &LuaTypeDeclId) -> bool {
 pub struct LuaConfigIndex {
     config_table_keys: HashMap<LuaTypeDeclId, ConfigTableIndexKeys>,
     in_file_types: HashMap<FileId, HashSet<LuaTypeDeclId>>,
+    config_table_pk_occurrences: HashMap<FileId, Vec<ConfigTablePkOccurrence>>,
 }
 
 impl Default for LuaConfigIndex {
@@ -47,6 +50,7 @@ impl LuaConfigIndex {
         Self {
             config_table_keys: HashMap::new(),
             in_file_types: HashMap::new(),
+            config_table_pk_occurrences: HashMap::new(),
         }
     }
 
@@ -70,10 +74,38 @@ impl LuaConfigIndex {
     pub fn has_config_table_keys(&self, id: &LuaTypeDeclId) -> bool {
         self.config_table_keys.contains_key(id)
     }
+
+    pub fn get_config_table_pk_occurrences(
+        &self,
+        file_id: &FileId,
+    ) -> Option<&Vec<ConfigTablePkOccurrence>> {
+        self.config_table_pk_occurrences.get(file_id)
+    }
+
+    pub fn iter_config_table_pk_occurrences(
+        &self,
+    ) -> impl Iterator<Item = &ConfigTablePkOccurrence> {
+        self.config_table_pk_occurrences
+            .values()
+            .flat_map(|v| v.iter())
+    }
+
+    pub fn add_config_table_pk_occurrences(
+        &mut self,
+        file_id: FileId,
+        occurrences: Vec<ConfigTablePkOccurrence>,
+    ) {
+        self.config_table_pk_occurrences.remove(&file_id);
+        if !occurrences.is_empty() {
+            self.config_table_pk_occurrences
+                .insert(file_id, occurrences);
+        }
+    }
 }
 
 impl LuaIndex for LuaConfigIndex {
     fn remove(&mut self, file_id: FileId) {
+        self.config_table_pk_occurrences.remove(&file_id);
         if let Some(type_ids) = self.in_file_types.remove(&file_id) {
             for type_id in type_ids {
                 self.config_table_keys.remove(&type_id);
@@ -84,5 +116,6 @@ impl LuaIndex for LuaConfigIndex {
     fn clear(&mut self) {
         self.config_table_keys.clear();
         self.in_file_types.clear();
+        self.config_table_pk_occurrences.clear();
     }
 }

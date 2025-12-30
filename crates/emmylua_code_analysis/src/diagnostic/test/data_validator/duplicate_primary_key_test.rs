@@ -131,4 +131,36 @@ mod test {
             "#,
         ));
     }
+
+    #[test]
+    fn test_multiple_definition() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+        ---@class Item: Bean
+        ---@field id int
+
+        ---@class TbItem: ConfigTable
+        ---@field [int] Item
+        "#,
+        );
+        ws.def(
+            r#"
+        ---@type TbItem
+        local items = {
+            { id = 1 },
+            { id = 2 },
+        }
+        "#,
+        );
+        assert!(!ws.check_code_for(
+            DiagnosticCode::DuplicatePrimaryKey,
+            r#"
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+            }
+            "#,
+        ));
+    }
 }
