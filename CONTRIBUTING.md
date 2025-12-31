@@ -1,18 +1,21 @@
 # Contributing
 
-## Crates Overview
+## Git Commit
 
-Our project is organized into several crates:
-
-| Crate                                                          | Badge                                                                                                                                                   | Description |
-|----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------| ----------- |
-| [🔍 **emmylua_parser**](./crates/emmylua_parser)               | [![emmylua_parser](https://img.shields.io/crates/v/emmylua_parser.svg?style=flat-square)](https://crates.io/crates/emmylua_parser)                      | The foundational Rust-based Lua parser engineered for maximum efficiency and accuracy. Powers all downstream analysis tools. |
-| [📑 **emmylua_parser_desc**](./crates/emmylua_parser_desc)     | [![emmylua_parser_desc](https://img.shields.io/crates/v/emmylua_parser_desc.svg?style=flat-square)](https://crates.io/crates/emmylua_parser_desc)       | Extension for EmmyLua-Parser that handles Markdown/RST highlighting in comments. |
-| [🧠 **emmylua_code_analysis**](./crates/emmylua_code_analysis) | [![emmylua_code_analysis](https://img.shields.io/crates/v/emmylua_code_analysis.svg?style=flat-square)](https://crates.io/crates/emmylua_code_analysis) | Advanced semantic analysis engine providing deep code understanding, type inference, and cross-reference resolution. |
-| [🖥️ **emmylua_ls**](./crates/emmylua_ls)                       | [![emmylua_ls](https://img.shields.io/crates/v/emmylua_ls.svg?style=flat-square)](https://crates.io/crates/emmylua_ls)                                  | The complete Language Server Protocol implementation offering rich IDE features across all major editors. |
-| [📚 **emmylua_doc_cli**](./crates/emmylua_doc_cli/)            | [![emmylua_doc_cli](https://img.shields.io/crates/v/emmylua_doc_cli.svg?style=flat-square)](https://crates.io/crates/emmylua_doc_cli)                   | Professional documentation generator creating beautiful, searchable API docs from your Lua code and annotations. |
-| [✅ **emmylua_check**](./crates/emmylua_check)                 | [![emmylua_check](https://img.shields.io/crates/v/emmylua_check.svg?style=flat-square)](https://crates.io/crates/emmylua_check)                         | Comprehensive static analysis tool for code quality assurance, catching bugs before they reach production. |
-
+| 类型         | 说明                                                          |
+| :----------- | :------------------------------------------------------------ |
+| **feat**     | 引入新功能                                                    |
+| **fix**      | 修复 Bug                                                      |
+| **docs**     | 仅修改文档（如 README, API 文档等）                           |
+| **style**    | 代码格式调整（不影响逻辑，如空格、分号、缩进等）              |
+| **refactor** | 代码重构（既不修复错误也不添加功能的更改）                    |
+| **perf**     | 提高性能的代码更改                                            |
+| **test**     | 添加缺失的测试或更正现有的测试                                |
+| **workflow** | 工作流相关的变更                                              |
+| **build**    | 影响构建系统或外部依赖的更改                                  |
+| **ci**       | 持续集成相关的配置文件或脚本更改（如 GitHub Actions, Travis） |
+| **chore**    | 其他不修改源代码或测试文件的辅助变更                          |
+| **wip**      | 正在开发中（Work in Progress），尚未完成的任务                |
 
 ## Testing
 
@@ -52,7 +55,6 @@ If you're unfamiliar with `googletest-rust`, here's a quick overview:
 
 - `OrFail::or_fail` converts any `Optional` and `Result` to a `googletest::Result`. It also adds current location
   to an error message. We have a wrapper around it called [`check!`].
-
 
 ## Code style and formatting
 
