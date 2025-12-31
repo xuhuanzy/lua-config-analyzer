@@ -35,10 +35,10 @@
 --
 -- ### 参数:
 --
--- - `tableName`: 配置表名称
--- - `field`: 指定字段名称.
+-- - `tableName`: 配置表名称, 必须是`ConfigTable`的子类.
+-- - `key`: 指定主键名称. 如果不提供, 则自动使用配置表的主键.
 --
----@attribute v.ref(tableName: string, field?: string)
+---@attribute v.ref(tableName: string, key?: string)
 
 -- 检查`list<bean>`与`array<bean>`内指定字段的值是否唯一.
 --
@@ -48,7 +48,7 @@
 ---@attribute v.index(id: string)
 
 
--- 定义配置表的索引字段列表, 可以有多个索引字段.
+-- 定义配置表的索引(主键)字段列表, 可以有多个索引字段.
 --
 -- 如果配置表的索引字段列表为空且配置表模式为"map", 则使用值类型的第一个字段作为索引字段.
 --
