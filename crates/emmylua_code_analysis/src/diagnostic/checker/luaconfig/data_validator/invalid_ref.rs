@@ -8,8 +8,8 @@ use crate::{
     LuaSemanticDeclId, LuaType, LuaTypeCache, LuaTypeDeclId, RenderLevel, SemanticModel,
     attributes::{ConfigTableMode, VRefAttribute},
     diagnostic::checker::{Checker, DiagnosticContext},
-    find_index_operations, find_members_with_key, humanize_type, infer_expr, is_sub_type_of,
-    semantic::shared::luaconfig::{BEAN, CONFIG_TABLE},
+    find_members_with_key, humanize_type, infer_expr,
+    semantic::shared::luaconfig::CONFIG_TABLE,
 };
 
 pub struct InvalidRefChecker;
@@ -44,11 +44,7 @@ impl Checker for InvalidRefChecker {
                 continue;
             };
 
-            if !is_sub_type_of(db, config_table_id, &CONFIG_TABLE.get_id()) {
-                continue;
-            }
-
-            let Some(bean_id) = get_config_table_bean_id(db, config_table_id) else {
+            let Some(bean_id) = CONFIG_TABLE.get_bean_id(db, config_table_id) else {
                 continue;
             };
 
@@ -315,6 +311,7 @@ fn collect_vref_rules_for_bean(
     out
 }
 
+/// 验证 v.ref 的签名, 确保合法
 fn validate_vref_signature(
     context: &mut DiagnosticContext,
     db: &crate::DbIndex,
@@ -324,7 +321,7 @@ fn validate_vref_signature(
 ) -> Option<(LuaTypeDeclId, LuaMemberKey)> {
     let range = source_member.get_range();
 
-    // 解析到真实的 ConfigTable 类型（支持当前文件 namespace/using）
+    // 解析到真实的 ConfigTable 类型(支持当前文件 namespace/using)
     let Some(target_decl) = db
         .get_type_index()
         .find_type_decl(source_member.get_file_id(), target_table_name)
@@ -343,12 +340,12 @@ fn validate_vref_signature(
     };
 
     let target_table_id = target_decl.get_id();
-    if !is_sub_type_of(db, &target_table_id, CONFIG_TABLE.get_id()) {
+    if !CONFIG_TABLE.is_config_table(db, &target_table_id) {
         context.add_diagnostic(
             DiagnosticCode::InvalidRef,
             range,
             t!(
-                "Invalid v.ref: `%{table}` is not a ConfigTable",
+                "Invalid v.ref: `%{table}` is not a `ConfigTable`",
                 table = target_table_name
             )
             .to_string(),
@@ -360,7 +357,7 @@ fn validate_vref_signature(
     let mode = db
         .get_config_index()
         .get_config_table_mode(&target_table_id);
-    // 暂不处理 singleton
+    // TODO: 暂不处理 singleton
     if mode == ConfigTableMode::Singleton {
         return None;
     }
@@ -467,27 +464,6 @@ fn validate_vref_signature(
         }
         ConfigTableMode::Singleton => None,
     }
-}
-
-fn get_config_table_bean_id(
-    db: &crate::DbIndex,
-    config_table_id: &LuaTypeDeclId,
-) -> Option<LuaTypeDeclId> {
-    let config_table_type = LuaType::Ref(config_table_id.clone());
-    let members = find_index_operations(db, &config_table_type)?;
-    let int_member = members
-        .iter()
-        .find(|m| matches!(m.key, LuaMemberKey::ExprType(LuaType::Integer)))?;
-
-    let LuaType::Ref(bean_id) = &int_member.typ else {
-        return None;
-    };
-
-    if !is_sub_type_of(db, bean_id, BEAN.get_id()) {
-        return None;
-    }
-
-    Some(bean_id.clone())
 }
 
 fn is_checkable_literal_key(ty: &LuaType) -> bool {
