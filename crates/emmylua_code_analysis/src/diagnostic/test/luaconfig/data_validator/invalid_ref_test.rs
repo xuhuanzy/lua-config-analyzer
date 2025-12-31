@@ -182,4 +182,80 @@ mod test {
             "#,
         ));
     }
+
+    #[test]
+    fn test_nested_bean_ref_value() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+
+            ---@class TestRef: Bean
+            ---@[v.ref("TbItem")]
+            ---@field x1 int
+        "#,
+        );
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type TestRef
+            local testRef = { x1 = 2, }
+            "#,
+        ));
+    }
+
+    #[test]
+    fn test_nested_bean_ref_value_in_config_table() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+
+            ---@class Inner: Bean
+            ---@field id int
+            ---@[v.ref("TbItem")]
+            ---@field itemId int
+
+            ---@class User: Bean
+            ---@field id int
+            ---@field inner Inner
+        "#,
+        );
+
+        assert!(ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type User
+            local users = { id = 1, inner = { id = 1, itemId = 3 } }
+            "#,
+        ));
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type User
+            local users = { id = 1, inner = { id = 1, itemId = 2 } }
+            "#,
+        ));
+    }
 }

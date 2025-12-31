@@ -1,15 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
-use emmylua_parser::{LuaAstNode, LuaTableExpr};
+use emmylua_parser::{LuaAstNode, LuaExpr, LuaTableExpr};
 use rowan::TextRange;
 
 use crate::{
     ConfigTablePkOccurrence, DiagnosticCode, LuaMember, LuaMemberKey, LuaMemberOwner,
-    LuaSemanticDeclId, LuaType, LuaTypeCache, LuaTypeDeclId, RenderLevel, SemanticModel,
+    LuaSemanticDeclId, LuaType, LuaTypeDeclId, RenderLevel, SemanticModel,
     attributes::{ConfigTableMode, VRefAttribute},
     diagnostic::checker::{Checker, DiagnosticContext},
-    find_members_with_key, humanize_type, infer_expr,
-    semantic::shared::luaconfig::CONFIG_TABLE,
+    humanize_type, infer_expr, infer_table_should_be,
+    semantic::shared::luaconfig::{BEAN, CONFIG_TABLE},
 };
 
 pub struct InvalidRefChecker;
@@ -22,61 +22,52 @@ impl Checker for InvalidRefChecker {
         let db = semantic_model.get_db();
         let root = semantic_model.get_root().clone();
 
-        let Some(decl_tree) = db.get_decl_index().get_decl_tree(&file_id) else {
+        // 扫描所有表以收集 Bean 表
+        // TODO: 关于 ref 的目标我们跳过了 Singleton ConfigTable, 因为在 lua 中我们完全可以通过 require 单例来解决
+        let mut infer_cache = semantic_model.get_cache().borrow_mut();
+        let mut beans_to_check: HashSet<LuaTypeDeclId> = HashSet::new();
+        let mut bean_tables: Vec<(LuaTableExpr, LuaTypeDeclId)> = Vec::new();
+
+        for table_expr in root.descendants::<LuaTableExpr>() {
+            let Ok(table_should_be) =
+                infer_table_should_be(db, &mut infer_cache, table_expr.clone())
+            else {
+                continue;
+            };
+
+            let Some(bean_id) =
+                resolve_expected_bean_id(db, file_id, &table_expr, &table_should_be)
+            else {
+                continue;
+            };
+
+            beans_to_check.insert(bean_id.clone());
+            bean_tables.push((table_expr, bean_id));
+        }
+
+        if bean_tables.is_empty() {
             return;
-        };
+        }
 
         // Bean -> v.ref rules (只生成签名合法的规则)
         let mut bean_rules_cache: HashMap<LuaTypeDeclId, Vec<ValidatedVRefRule>> = HashMap::new();
-
-        // 当前文件内需要检查的 ConfigTable 数据: (table_expr, bean_id)
-        let mut tables_to_check: Vec<(LuaTableExpr, LuaTypeDeclId)> = Vec::new();
-
         // 仅收集本文件实际用到的 (target_table -> target_keys)，用于过滤主键值集合构建
         let mut needed: HashMap<LuaTypeDeclId, HashSet<LuaMemberKey>> = HashMap::new();
-
-        for (decl_id, decl) in decl_tree.get_decls().iter() {
-            let Some(type_cache) = db.get_type_index().get_type_cache(&(*decl_id).into()) else {
-                continue;
-            };
-
-            let LuaTypeCache::DocType(LuaType::Ref(config_table_id)) = type_cache else {
-                continue;
-            };
-
-            let Some(bean_id) = CONFIG_TABLE.get_bean_id(db, config_table_id) else {
-                continue;
-            };
-
-            let rules = bean_rules_cache
-                .entry(bean_id.clone())
-                .or_insert_with(|| collect_vref_rules_for_bean(context, db, &bean_id));
+        for bean_id in beans_to_check {
+            let rules = collect_vref_rules_for_bean(context, db, &bean_id);
             if rules.is_empty() {
                 continue;
             }
-
-            let Some(expr_id) = decl.get_value_syntax_id() else {
-                continue;
-            };
-
-            let Some(table_node) = expr_id.to_node_from_root(root.syntax()) else {
-                continue;
-            };
-            let Some(table_expr) = LuaTableExpr::cast(table_node) else {
-                continue;
-            };
-
             for rule in rules.iter() {
                 needed
                     .entry(rule.target_table.clone())
                     .or_default()
                     .insert(rule.target_key.clone());
             }
-
-            tables_to_check.push((table_expr, bean_id));
+            bean_rules_cache.insert(bean_id, rules);
         }
 
-        if tables_to_check.is_empty() {
+        if bean_rules_cache.is_empty() {
             return;
         }
 
@@ -104,8 +95,7 @@ impl Checker for InvalidRefChecker {
             });
         }
 
-        let mut infer_cache = semantic_model.get_cache().borrow_mut();
-        for (table_expr, bean_id) in tables_to_check {
+        for (table_expr, bean_id) in bean_tables {
             let Some(rules) = bean_rules_cache.get(&bean_id) else {
                 continue;
             };
@@ -113,7 +103,7 @@ impl Checker for InvalidRefChecker {
                 continue;
             }
 
-            validate_table_data(context, db, &mut infer_cache, &pk_sets, rules, &table_expr);
+            validate_bean_table_data(context, db, &mut infer_cache, &pk_sets, rules, &table_expr);
         }
     }
 }
@@ -200,7 +190,7 @@ impl PkValueSets {
     }
 }
 
-fn validate_table_data(
+fn validate_bean_table_data(
     context: &mut DiagnosticContext,
     db: &crate::DbIndex,
     infer_cache: &mut crate::LuaInferCache,
@@ -208,56 +198,56 @@ fn validate_table_data(
     rules: &[ValidatedVRefRule],
     table: &LuaTableExpr,
 ) {
+    let mut field_map: HashMap<LuaMemberKey, (LuaExpr, TextRange)> = HashMap::new();
     for field in table.get_fields() {
-        let Some(row_expr) = field.get_value_expr() else {
+        let Some(field_key) = field.get_field_key() else {
             continue;
         };
 
-        let Ok(row_typ) = infer_expr(db, infer_cache, row_expr) else {
+        let Ok(member_key) = LuaMemberKey::from_index_key(db, infer_cache, &field_key) else {
             continue;
         };
 
-        for rule in rules {
-            let Some(member_infos) =
-                find_members_with_key(db, &row_typ, rule.source_key.clone(), false)
-            else {
-                continue;
-            };
+        let Some(value_expr) = field.get_value_expr() else {
+            continue;
+        };
 
-            let Some(member_info) = member_infos.first() else {
-                continue;
-            };
+        field_map.insert(member_key, (value_expr, field.get_range()));
+    }
 
-            let range = match member_info.property_owner_id {
-                Some(LuaSemanticDeclId::Member(member_id)) => member_id.get_syntax_id().get_range(),
-                _ => continue,
-            };
+    for rule in rules {
+        let Some((value_expr, range)) = field_map.get(&rule.source_key) else {
+            continue;
+        };
 
-            if !is_checkable_literal_key(&member_info.typ) {
-                continue;
-            }
+        let Ok(value_typ) = infer_expr(db, infer_cache, value_expr.clone()) else {
+            continue;
+        };
 
-            if pk_sets.contains(&rule.target_table, &rule.target_key, &member_info.typ) {
-                continue;
-            }
-
-            let value = humanize_type(db, &member_info.typ, RenderLevel::Simple);
-            let key_path = rule.target_key.to_path();
-            let table_name = rule.target_table.get_name();
-
-            context.add_diagnostic(
-                DiagnosticCode::InvalidRef,
-                range,
-                t!(
-                    "Invalid reference `%{value}`: not found in `%{table}.%{key}`",
-                    value = value,
-                    table = table_name,
-                    key = key_path
-                )
-                .to_string(),
-                None,
-            );
+        if !is_checkable_literal_key(&value_typ) {
+            continue;
         }
+
+        if pk_sets.contains(&rule.target_table, &rule.target_key, &value_typ) {
+            continue;
+        }
+
+        let value = humanize_type(db, &value_typ, RenderLevel::Simple);
+        let key_path = rule.target_key.to_path();
+        let table_name = rule.target_table.get_name();
+
+        context.add_diagnostic(
+            DiagnosticCode::InvalidRef,
+            *range,
+            t!(
+                "Invalid reference `%{value}`: not found in `%{table}.%{key}`",
+                value = value,
+                table = table_name,
+                key = key_path
+            )
+            .to_string(),
+            None,
+        );
     }
 }
 
@@ -309,6 +299,65 @@ fn collect_vref_rules_for_bean(
     }
 
     out
+}
+
+fn resolve_expected_bean_id(
+    db: &crate::DbIndex,
+    file_id: crate::FileId,
+    table_expr: &LuaTableExpr,
+    ty: &LuaType,
+) -> Option<LuaTypeDeclId> {
+    match ty {
+        LuaType::Ref(type_decl_id) => {
+            if BEAN.is_bean(db, type_decl_id) {
+                Some(type_decl_id.clone())
+            } else {
+                None
+            }
+        }
+        LuaType::Def(type_decl_id) => {
+            if BEAN.is_bean(db, type_decl_id) {
+                Some(type_decl_id.clone())
+            } else {
+                None
+            }
+        }
+        LuaType::Generic(generic) => {
+            let base_type_id = generic.get_base_type_id();
+            if BEAN.is_bean(db, &base_type_id) {
+                Some(base_type_id)
+            } else {
+                None
+            }
+        }
+        LuaType::Union(union) => {
+            let mut bean_ids: HashSet<LuaTypeDeclId> = HashSet::new();
+            for inner in union.into_vec().iter() {
+                if let Some(bean_id) = resolve_expected_bean_id(db, file_id, table_expr, inner) {
+                    bean_ids.insert(bean_id);
+                }
+            }
+
+            if bean_ids.len() == 1 {
+                bean_ids.into_iter().next()
+            } else {
+                None
+            }
+        }
+        LuaType::MultiLineUnion(multi) => {
+            let union = multi.to_union();
+            resolve_expected_bean_id(db, file_id, table_expr, &union)
+        }
+        LuaType::TableConst(in_file_range) => {
+            // Unresolved table: expected type is itself, skip.
+            match in_file_range.file_id == file_id && in_file_range.value == table_expr.get_range()
+            {
+                true => None,
+                false => None,
+            }
+        }
+        _ => None,
+    }
 }
 
 /// 验证 v.ref 的签名, 确保合法
