@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use rowan::TextRange;
 
 use crate::{LuaMemberKey, LuaType, LuaTypeDeclId};
@@ -6,12 +8,13 @@ use crate::{LuaMemberKey, LuaType, LuaTypeDeclId};
 pub enum ConfigTablePkOccurrence {
     Solo {
         config_table: LuaTypeDeclId,
-        key: LuaMemberKey,
+        key: Arc<LuaMemberKey>,
         value: LuaType,
         range: TextRange,
     },
     Union {
         config_table: LuaTypeDeclId,
+        keys: Arc<[LuaMemberKey]>,
         values: Vec<LuaType>,
         ranges: Vec<TextRange>,
     },

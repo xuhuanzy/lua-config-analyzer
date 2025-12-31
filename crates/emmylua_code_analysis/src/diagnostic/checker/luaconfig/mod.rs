@@ -14,4 +14,5 @@ pub fn check_luaconfig(context: &mut DiagnosticContext, semantic_model: &Semanti
         context,
         semantic_model,
     );
+    run_check::<data_validator::invalid_ref::InvalidRefChecker>(context, semantic_model);
 }

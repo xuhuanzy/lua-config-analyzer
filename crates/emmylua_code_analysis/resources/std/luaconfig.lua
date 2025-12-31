@@ -36,8 +36,9 @@
 -- ### 参数:
 --
 -- - `tableName`: 配置表名称
+-- - `field`: 指定字段名称.
 --
----@attribute v.ref(tableName: string)
+---@attribute v.ref(tableName: string, field?: string)
 
 -- 检查`list<bean>`与`array<bean>`内指定字段的值是否唯一.
 --

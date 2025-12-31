@@ -6,6 +6,7 @@ use crate::{
     db_index::{DbIndex, LuaMemberOwner},
     diagnostic::checker::{Checker, DiagnosticContext},
     find_index_operations, is_sub_type_of,
+    semantic::shared::luaconfig::{BEAN, CONFIG_TABLE},
 };
 use emmylua_parser::{
     LuaAstNode, LuaDocAttributeUse, LuaDocTagAttributeUse, LuaDocTagClass, LuaDocType,
@@ -27,12 +28,10 @@ impl Checker for InvalidIndexFieldChecker {
             return;
         };
 
-        let config_table_type_id = LuaTypeDeclId::new(crate::CONFIG_TABLE_TYPE_NAME);
-
         // 收集所有继承自 ConfigTable 的类型 ID
         let mut config_table_ids: HashSet<LuaTypeDeclId> = HashSet::new();
         for type_decl_id in file_types.iter() {
-            if is_sub_type_of(db, type_decl_id, &config_table_type_id) {
+            if is_sub_type_of(db, type_decl_id, CONFIG_TABLE.get_id()) {
                 config_table_ids.insert(type_decl_id.clone());
             }
         }
@@ -136,8 +135,7 @@ fn get_bean_member_names(db: &DbIndex, config_table_id: &LuaTypeDeclId) -> Optio
     };
 
     // 检查是否是 Bean 的子类型
-    let bean_type_id = LuaTypeDeclId::new(crate::BEAN_TYPE_NAME);
-    if !is_sub_type_of(db, bean_id, &bean_type_id) {
+    if !is_sub_type_of(db, bean_id, BEAN.get_id()) {
         return None;
     }
 

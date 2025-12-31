@@ -1,5 +1,3 @@
-// luaconfig.lua 中定义的内置特性结构体
-
 use crate::{LuaAttributeUse, LuaCommonProperty, LuaType};
 
 /// 配置表索引模式
@@ -139,6 +137,18 @@ impl<'a> VRefAttribute<'a> {
             .inner
             .get_param_by_name("tableName")
             .or_else(|| self.inner.args.first().and_then(|(_, t)| t.as_ref()))?;
+
+        match ty {
+            LuaType::DocStringConst(s) | LuaType::StringConst(s) => Some(s.as_ref().as_str()),
+            _ => None,
+        }
+    }
+
+    pub fn get_field_name(&self) -> Option<&str> {
+        let ty = self
+            .inner
+            .get_param_by_name("field")
+            .or_else(|| self.inner.args.get(1).and_then(|(_, t)| t.as_ref()))?;
 
         match ty {
             LuaType::DocStringConst(s) | LuaType::StringConst(s) => Some(s.as_ref().as_str()),

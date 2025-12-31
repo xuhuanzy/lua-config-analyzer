@@ -119,6 +119,8 @@ pub enum DiagnosticCode {
     DuplicatePrimaryKey,
     /// invalid-index-field
     InvalidIndexField,
+    /// invalid-ref
+    InvalidRef,
 
     #[serde(other)]
     None,

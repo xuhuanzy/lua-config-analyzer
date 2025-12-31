@@ -7,33 +7,8 @@ pub use config_table_index_keys::ConfigTableIndexKeys;
 pub use config_table_pk_occurrence::ConfigTablePkOccurrence;
 
 use crate::{
-    FileId, LuaType, LuaTypeDeclId, db_index::traits::LuaIndex,
-    semantic::attributes::ConfigTableMode,
+    FileId, LuaTypeDeclId, db_index::traits::LuaIndex, semantic::attributes::ConfigTableMode,
 };
-
-pub const CONFIG_TABLE_TYPE_NAME: &str = "ConfigTable";
-
-pub const BEAN_TYPE_NAME: &str = "Bean";
-
-/// 检测类型是否为 ConfigTable 引用
-pub fn is_config_table_type(ty: &LuaType) -> bool {
-    matches!(ty, LuaType::Ref(id) if id.get_name() == CONFIG_TABLE_TYPE_NAME)
-}
-
-/// 检测类型声明 ID 是否为 ConfigTable
-pub fn is_config_table_decl(id: &LuaTypeDeclId) -> bool {
-    id.get_name() == CONFIG_TABLE_TYPE_NAME
-}
-
-/// 检测类型是否为 Bean 引用
-pub fn is_bean_type(ty: &LuaType) -> bool {
-    matches!(ty, LuaType::Ref(id) if id.get_name() == BEAN_TYPE_NAME)
-}
-
-/// 检测类型声明 ID 是否为 Bean
-pub fn is_bean_decl(id: &LuaTypeDeclId) -> bool {
-    id.get_name() == BEAN_TYPE_NAME
-}
 
 #[derive(Debug)]
 pub struct LuaConfigIndex {

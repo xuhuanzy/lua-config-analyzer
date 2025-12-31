@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+};
 
 use crate::{
     ConfigTablePkOccurrence, DiagnosticCode, LuaMemberKey, LuaType, LuaTypeDeclId, RenderLevel,
@@ -46,11 +49,12 @@ impl Checker for DuplicatePrimaryKeyChecker {
                     ..
                 } => {
                     *solo_counts
-                        .entry((config_table.clone(), key.clone(), value.clone()))
+                        .entry((config_table.clone(), key.deref().clone(), value.clone()))
                         .or_default() += 1;
                 }
                 ConfigTablePkOccurrence::Union {
                     config_table,
+                    keys: _,
                     values,
                     ..
                 } => {
@@ -70,7 +74,7 @@ impl Checker for DuplicatePrimaryKeyChecker {
                     range,
                 } => {
                     let count = solo_counts
-                        .get(&(config_table.clone(), key.clone(), value.clone()))
+                        .get(&(config_table.clone(), key.deref().clone(), value.clone()))
                         .copied()
                         .unwrap_or(0);
                     if count <= 1 {
@@ -102,6 +106,7 @@ impl Checker for DuplicatePrimaryKeyChecker {
                 }
                 ConfigTablePkOccurrence::Union {
                     config_table,
+                    keys: _,
                     values,
                     ranges,
                 } => {

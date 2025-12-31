@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use emmylua_parser::{LuaAstNode, LuaChunk, LuaTableExpr};
 
 use crate::{
@@ -75,18 +77,17 @@ fn collect_table_occurrences(
         return;
     }
 
-    let fields = table.get_fields().collect::<Vec<_>>();
-    for field in fields {
-        let Some(row_expr) = field.get_value_expr() else {
-            continue;
-        };
+    match index_keys {
+        ConfigTableIndexKeys::Solo(_) => {
+            for field in table.get_fields() {
+                let Some(row_expr) = field.get_value_expr() else {
+                    continue;
+                };
 
-        let Ok(row_typ) = infer_expr(db, infer_cache, row_expr) else {
-            continue;
-        };
+                let Ok(row_typ) = infer_expr(db, infer_cache, row_expr) else {
+                    continue;
+                };
 
-        match index_keys {
-            ConfigTableIndexKeys::Solo(_) => {
                 for key in keys {
                     let Some(member_infos) =
                         find_members_with_key(db, &row_typ, key.clone(), false)
@@ -107,18 +108,29 @@ fn collect_table_occurrences(
 
                     out.push(ConfigTablePkOccurrence::Solo {
                         config_table: config_table.clone(),
-                        key: key.clone(),
+                        key: Arc::new(key.clone()),
                         value: member_info.typ.clone(),
                         range,
                     });
                 }
             }
-            ConfigTableIndexKeys::Union(_) => {
-                let mut values: Vec<LuaType> = Vec::with_capacity(keys.len());
-                let mut ranges = Vec::with_capacity(keys.len());
+        }
+        ConfigTableIndexKeys::Union(_) => {
+            let keys_arc: Arc<[crate::LuaMemberKey]> = Arc::from(keys.to_vec());
+            for field in table.get_fields() {
+                let Some(row_expr) = field.get_value_expr() else {
+                    continue;
+                };
+
+                let Ok(row_typ) = infer_expr(db, infer_cache, row_expr) else {
+                    continue;
+                };
+
+                let mut values: Vec<LuaType> = Vec::with_capacity(keys_arc.len());
+                let mut ranges = Vec::with_capacity(keys_arc.len());
 
                 let mut ok = true;
-                for key in keys {
+                for key in keys_arc.iter() {
                     let Some(member_infos) =
                         find_members_with_key(db, &row_typ, key.clone(), false)
                     else {
@@ -151,6 +163,7 @@ fn collect_table_occurrences(
 
                 out.push(ConfigTablePkOccurrence::Union {
                     config_table: config_table.clone(),
+                    keys: keys_arc.clone(),
                     values,
                     ranges,
                 });

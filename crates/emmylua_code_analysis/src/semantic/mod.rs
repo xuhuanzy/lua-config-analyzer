@@ -8,6 +8,7 @@ mod member;
 mod overload_resolve;
 mod reference;
 mod semantic_info;
+pub mod shared;
 mod type_check;
 mod visibility;
 

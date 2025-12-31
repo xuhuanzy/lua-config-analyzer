@@ -5,6 +5,7 @@ use crate::{
     semantic::attributes::{
         ConfigTableIndexMode, ConfigTableMode, TIndexAttribute, TModeAttribute,
     },
+    semantic::shared::luaconfig::BEAN,
 };
 
 /// 解析 ConfigTable 的索引键并缓存到 LuaConfigIndex
@@ -40,8 +41,7 @@ pub fn resolve_config_table_index(
     };
 
     // 检查是否是 Bean 的子类型 (递归检查父类)
-    let bean_type_id = crate::LuaTypeDeclId::new(crate::BEAN_TYPE_NAME);
-    let is_bean = is_sub_type_of(db, bean_id, &bean_type_id);
+    let is_bean = is_sub_type_of(db, bean_id, BEAN.get_id());
     if !is_bean {
         return;
     }
