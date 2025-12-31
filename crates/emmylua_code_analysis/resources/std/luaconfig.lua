@@ -2,7 +2,7 @@
 
 ---@alias list<T> T[]
 
----@alias set<T> table<T, any>
+---@alias set<T> T[]
 
 ---@alias map<K,V> table<K,V>
 

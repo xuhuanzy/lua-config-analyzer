@@ -121,6 +121,8 @@ pub enum DiagnosticCode {
     InvalidIndexField,
     /// invalid-ref
     InvalidRef,
+    /// duplicate-set-element
+    DuplicateSetElement,
 
     #[serde(other)]
     None,

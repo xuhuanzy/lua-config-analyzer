@@ -10,7 +10,7 @@ use rowan::TextRange;
 use smol_str::SmolStr;
 
 use crate::{
-    AsyncState, DbIndex, FileId, InFiled, SemanticModel,
+    AsyncState, DbIndex, FileId, InFiled, LuaAttributeUse, SemanticModel,
     db_index::{LuaMemberKey, LuaSignatureId, r#type::type_visit_trait::TypeVisitTrait},
     first_param_may_not_self,
 };
@@ -65,6 +65,7 @@ pub enum LuaType {
     Language(ArcIntern<SmolStr>),
     ModuleRef(FileId),
     DocAttribute(Arc<LuaAttributeType>),
+    Attributed(Arc<LuaAttributedType>),
     Conditional(Arc<LuaConditionalType>),
     ConditionalInfer(ArcIntern<SmolStr>),
     Mapped(Arc<LuaMappedType>),
@@ -119,6 +120,7 @@ impl PartialEq for LuaType {
             (LuaType::Language(a), LuaType::Language(b)) => a == b,
             (LuaType::ModuleRef(a), LuaType::ModuleRef(b)) => a == b,
             (LuaType::DocAttribute(a), LuaType::DocAttribute(b)) => a == b,
+            (LuaType::Attributed(a), LuaType::Attributed(b)) => a == b,
             (LuaType::Conditional(a), LuaType::Conditional(b)) => a == b,
             (LuaType::ConditionalInfer(a), LuaType::ConditionalInfer(b)) => a == b,
             (LuaType::Mapped(a), LuaType::Mapped(b)) => a == b,
@@ -220,27 +222,37 @@ impl Hash for LuaType {
                 (51, ptr).hash(state)
             }
             LuaType::DocAttribute(a) => (52, a).hash(state),
+            LuaType::Attributed(a) => {
+                let ptr = Arc::as_ptr(a);
+                (53, ptr).hash(state)
+            }
         }
     }
 }
 
-#[allow(unused)]
 impl LuaType {
+    pub fn strip_attributed(&self) -> &LuaType {
+        match self {
+            LuaType::Attributed(attributed) => attributed.get_base().strip_attributed(),
+            _ => self,
+        }
+    }
+
     pub fn is_unknown(&self) -> bool {
-        matches!(self, LuaType::Unknown)
+        matches!(self.strip_attributed(), LuaType::Unknown)
     }
 
     pub fn is_nil(&self) -> bool {
-        matches!(self, LuaType::Nil)
+        matches!(self.strip_attributed(), LuaType::Nil)
     }
 
     pub fn is_never(&self) -> bool {
-        matches!(self, LuaType::Never)
+        matches!(self.strip_attributed(), LuaType::Never)
     }
 
     pub fn is_table(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::Table
                 | LuaType::TableGeneric(_)
                 | LuaType::TableConst(_)
@@ -251,23 +263,23 @@ impl LuaType {
     }
 
     pub fn is_userdata(&self) -> bool {
-        matches!(self, LuaType::Userdata)
+        matches!(self.strip_attributed(), LuaType::Userdata)
     }
 
     pub fn is_thread(&self) -> bool {
-        matches!(self, LuaType::Thread)
+        matches!(self.strip_attributed(), LuaType::Thread)
     }
 
     pub fn is_boolean(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::BooleanConst(_) | LuaType::Boolean | LuaType::DocBooleanConst(_)
         )
     }
 
     pub fn is_string(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::StringConst(_)
                 | LuaType::String
                 | LuaType::DocStringConst(_)
@@ -277,40 +289,40 @@ impl LuaType {
 
     pub fn is_integer(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::IntegerConst(_) | LuaType::Integer | LuaType::DocIntegerConst(_)
         )
     }
 
     pub fn is_number(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::Number | LuaType::Integer | LuaType::IntegerConst(_) | LuaType::FloatConst(_)
         )
     }
 
     pub fn is_io(&self) -> bool {
-        matches!(self, LuaType::Io)
+        matches!(self.strip_attributed(), LuaType::Io)
     }
 
     pub fn is_ref(&self) -> bool {
-        matches!(self, LuaType::Ref(_))
+        matches!(self.strip_attributed(), LuaType::Ref(_))
     }
 
     pub fn is_def(&self) -> bool {
-        matches!(self, LuaType::Def(_))
+        matches!(self.strip_attributed(), LuaType::Def(_))
     }
 
     pub fn is_custom_type(&self) -> bool {
-        matches!(self, LuaType::Ref(_) | LuaType::Def(_))
+        matches!(self.strip_attributed(), LuaType::Ref(_) | LuaType::Def(_))
     }
 
     pub fn is_array(&self) -> bool {
-        matches!(self, LuaType::Array(_))
+        matches!(self.strip_attributed(), LuaType::Array(_))
     }
 
     pub fn is_nullable(&self) -> bool {
-        match self {
+        match self.strip_attributed() {
             LuaType::Nil => true,
             LuaType::Union(u) => u.is_nullable(),
             _ => false,
@@ -318,7 +330,7 @@ impl LuaType {
     }
 
     pub fn is_optional(&self) -> bool {
-        match self {
+        match self.strip_attributed() {
             LuaType::Nil | LuaType::Any | LuaType::Unknown => true,
             LuaType::Union(u) => u.is_optional(),
             LuaType::Variadic(_) => true,
@@ -327,7 +339,7 @@ impl LuaType {
     }
 
     pub fn is_always_truthy(&self) -> bool {
-        match self {
+        match self.strip_attributed() {
             LuaType::Nil | LuaType::Boolean | LuaType::Any | LuaType::Unknown => false,
             LuaType::BooleanConst(boolean) | LuaType::DocBooleanConst(boolean) => *boolean,
             LuaType::Union(u) => u.is_always_truthy(),
@@ -337,7 +349,7 @@ impl LuaType {
     }
 
     pub fn is_always_falsy(&self) -> bool {
-        match self {
+        match self.strip_attributed() {
             LuaType::Nil | LuaType::BooleanConst(false) | LuaType::DocBooleanConst(false) => true,
             LuaType::Union(u) => u.is_always_falsy(),
             LuaType::TypeGuard(_) => false,
@@ -346,67 +358,73 @@ impl LuaType {
     }
 
     pub fn is_tuple(&self) -> bool {
-        matches!(self, LuaType::Tuple(_))
+        matches!(self.strip_attributed(), LuaType::Tuple(_))
     }
 
     pub fn is_function(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::DocFunction(_) | LuaType::Function | LuaType::Signature(_)
         )
     }
 
     pub fn is_signature(&self) -> bool {
-        matches!(self, LuaType::Signature(_))
+        matches!(self.strip_attributed(), LuaType::Signature(_))
     }
 
     pub fn is_object(&self) -> bool {
-        matches!(self, LuaType::Object(_))
+        matches!(self.strip_attributed(), LuaType::Object(_))
     }
 
     pub fn is_union(&self) -> bool {
-        matches!(self, LuaType::Union(_))
+        matches!(self.strip_attributed(), LuaType::Union(_))
     }
 
     pub fn is_intersection(&self) -> bool {
-        matches!(self, LuaType::Intersection(_))
+        matches!(self.strip_attributed(), LuaType::Intersection(_))
     }
 
     pub fn is_call(&self) -> bool {
-        matches!(self, LuaType::Call(_))
+        matches!(self.strip_attributed(), LuaType::Call(_))
     }
 
     pub fn is_generic(&self) -> bool {
-        matches!(self, LuaType::Generic(_) | LuaType::TableGeneric(_))
+        matches!(
+            self.strip_attributed(),
+            LuaType::Generic(_) | LuaType::TableGeneric(_)
+        )
     }
 
     pub fn is_table_generic(&self) -> bool {
-        matches!(self, LuaType::TableGeneric(_))
+        matches!(self.strip_attributed(), LuaType::TableGeneric(_))
     }
 
     pub fn is_class_tpl(&self) -> bool {
-        matches!(self, LuaType::TplRef(_))
+        matches!(self.strip_attributed(), LuaType::TplRef(_))
     }
 
     pub fn is_str_tpl_ref(&self) -> bool {
-        matches!(self, LuaType::StrTplRef(_))
+        matches!(self.strip_attributed(), LuaType::StrTplRef(_))
     }
 
     pub fn is_tpl(&self) -> bool {
-        matches!(self, LuaType::TplRef(_) | LuaType::StrTplRef(_))
+        matches!(
+            self.strip_attributed(),
+            LuaType::TplRef(_) | LuaType::StrTplRef(_)
+        )
     }
 
     pub fn is_self_infer(&self) -> bool {
-        matches!(self, LuaType::SelfInfer)
+        matches!(self.strip_attributed(), LuaType::SelfInfer)
     }
 
     pub fn is_any(&self) -> bool {
-        matches!(self, LuaType::Any)
+        matches!(self.strip_attributed(), LuaType::Any)
     }
 
     pub fn is_const(&self) -> bool {
         matches!(
-            self,
+            self.strip_attributed(),
             LuaType::BooleanConst(_)
                 | LuaType::StringConst(_)
                 | LuaType::IntegerConst(_)
@@ -418,11 +436,11 @@ impl LuaType {
     }
 
     pub fn is_multi_return(&self) -> bool {
-        matches!(self, LuaType::Variadic(_))
+        matches!(self.strip_attributed(), LuaType::Variadic(_))
     }
 
     pub fn is_global(&self) -> bool {
-        matches!(self, LuaType::Global)
+        matches!(self.strip_attributed(), LuaType::Global)
     }
 
     pub fn contain_tpl(&self) -> bool {
@@ -435,9 +453,9 @@ impl LuaType {
             LuaType::Union(base) => base.contain_tpl(),
             LuaType::Intersection(base) => base.contain_tpl(),
             LuaType::Generic(base) => base.contain_tpl(),
+            LuaType::Attributed(inner) => inner.contain_tpl(),
             LuaType::Variadic(multi) => multi.contain_tpl(),
             LuaType::TableGeneric(params) => params.iter().any(|p| p.contain_tpl()),
-            LuaType::Variadic(inner) => inner.contain_tpl(),
             LuaType::TplRef(_) => true,
             LuaType::StrTplRef(_) => true,
             LuaType::ConstTplRef(_) => true,
@@ -451,23 +469,26 @@ impl LuaType {
     }
 
     pub fn is_namespace(&self) -> bool {
-        matches!(self, LuaType::Namespace(_))
+        matches!(self.strip_attributed(), LuaType::Namespace(_))
     }
 
     pub fn is_variadic(&self) -> bool {
-        matches!(self, LuaType::Variadic(_))
+        matches!(self.strip_attributed(), LuaType::Variadic(_))
     }
 
     pub fn is_member_owner(&self) -> bool {
-        matches!(self, LuaType::Ref(_) | LuaType::TableConst(_))
+        matches!(
+            self.strip_attributed(),
+            LuaType::Ref(_) | LuaType::TableConst(_)
+        )
     }
 
     pub fn is_type_guard(&self) -> bool {
-        matches!(self, LuaType::TypeGuard(_))
+        matches!(self.strip_attributed(), LuaType::TypeGuard(_))
     }
 
     pub fn is_multi_line_union(&self) -> bool {
-        matches!(self, LuaType::MultiLineUnion(_))
+        matches!(self.strip_attributed(), LuaType::MultiLineUnion(_))
     }
 
     pub fn from_vec(types: Vec<LuaType>) -> Self {
@@ -504,7 +525,7 @@ impl LuaType {
     }
 
     pub fn is_module_ref(&self) -> bool {
-        matches!(self, LuaType::ModuleRef(_))
+        matches!(self.strip_attributed(), LuaType::ModuleRef(_))
     }
 }
 
@@ -522,6 +543,7 @@ impl TypeVisitTrait for LuaType {
             LuaType::Union(base) => base.visit_type(f),
             LuaType::Intersection(base) => base.visit_type(f),
             LuaType::Generic(base) => base.visit_type(f),
+            LuaType::Attributed(base) => base.visit_type(f),
             LuaType::Variadic(multi) => multi.visit_type(f),
             LuaType::TableGeneric(params) => {
                 for param in params.iter() {
@@ -532,6 +554,62 @@ impl TypeVisitTrait for LuaType {
             LuaType::TypeGuard(inner) => inner.visit_type(f),
             LuaType::Conditional(inner) => inner.visit_type(f),
             _ => {}
+        }
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct LuaAttributedType {
+    base: LuaType,
+    attributes: Arc<Vec<LuaAttributeUse>>,
+}
+
+impl LuaAttributedType {
+    pub fn new(base: LuaType, attributes: Vec<LuaAttributeUse>) -> Self {
+        Self {
+            base,
+            attributes: Arc::new(attributes),
+        }
+    }
+
+    pub fn get_base(&self) -> &LuaType {
+        &self.base
+    }
+
+    pub fn get_attributes(&self) -> &Arc<Vec<LuaAttributeUse>> {
+        &self.attributes
+    }
+
+    pub fn find_attribute_use(&self, id: &str) -> Option<&LuaAttributeUse> {
+        self.attributes
+            .iter()
+            .find(|attribute_use| attribute_use.id.get_name() == id)
+    }
+
+    pub fn contain_tpl(&self) -> bool {
+        self.base.contain_tpl()
+            || self
+                .attributes
+                .iter()
+                .flat_map(|attribute_use| {
+                    attribute_use.args.iter().filter_map(|(_, ty)| ty.as_ref())
+                })
+                .any(|ty| ty.contain_tpl())
+    }
+}
+
+impl TypeVisitTrait for LuaAttributedType {
+    fn visit_type<F>(&self, f: &mut F)
+    where
+        F: FnMut(&LuaType),
+    {
+        self.base.visit_type(f);
+        for ty in self
+            .attributes
+            .iter()
+            .flat_map(|attribute_use| attribute_use.args.iter().filter_map(|(_, ty)| ty.as_ref()))
+        {
+            ty.visit_type(f);
         }
     }
 }

@@ -7,12 +7,12 @@ use std::{
 };
 
 use crate::{
-    DbIndex, GenericTpl, GenericTplId, LuaAliasCallKind, LuaArrayType, LuaConditionalType,
-    LuaMappedType, LuaMemberKey, LuaOperatorMetaMethod, LuaSignatureId, LuaTupleStatus,
-    LuaTypeDeclId, TypeOps, check_type_compact,
+    DbIndex, GenericTpl, GenericTplId, LuaAliasCallKind, LuaArrayType, LuaAttributeUse,
+    LuaConditionalType, LuaMappedType, LuaMemberKey, LuaOperatorMetaMethod, LuaSignatureId,
+    LuaTupleStatus, LuaTypeDeclId, TypeOps, check_type_compact,
     db_index::{
-        LuaFunctionType, LuaGenericType, LuaIntersectionType, LuaObjectType, LuaTupleType, LuaType,
-        LuaUnionType, VariadicType,
+        LuaAttributedType, LuaFunctionType, LuaGenericType, LuaIntersectionType, LuaObjectType,
+        LuaTupleType, LuaType, LuaUnionType, VariadicType,
     },
     semantic::type_check::{TypeCheckCheckLevel, check_type_compact_with_level},
 };
@@ -38,6 +38,21 @@ pub fn instantiate_type_generic(
             instantiate_intersection(db, intersection, substitutor)
         }
         LuaType::Generic(generic) => instantiate_generic(db, generic, substitutor),
+        LuaType::Attributed(attributed) => {
+            let base = instantiate_type_generic(db, attributed.get_base(), substitutor);
+            let mut new_attributes = Vec::new();
+            for attribute_use in attributed.get_attributes().iter() {
+                let mut args = Vec::new();
+                for (name, ty) in attribute_use.args.iter() {
+                    let new_ty = ty
+                        .as_ref()
+                        .map(|ty| instantiate_type_generic(db, ty, substitutor));
+                    args.push((name.clone(), new_ty));
+                }
+                new_attributes.push(LuaAttributeUse::new(attribute_use.id.clone(), args));
+            }
+            LuaType::Attributed(LuaAttributedType::new(base, new_attributes).into())
+        }
         LuaType::TableGeneric(table_params) => {
             instantiate_table_generic(db, table_params, substitutor)
         }

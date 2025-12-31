@@ -4,9 +4,9 @@ use emmylua_parser::{
     LuaAst, LuaAstNode, LuaDocAttributeType, LuaDocBinaryType, LuaDocConditionalType,
     LuaDocDescriptionOwner, LuaDocFuncType, LuaDocGenericDecl, LuaDocGenericDeclList,
     LuaDocGenericType, LuaDocIndexAccessType, LuaDocInferType, LuaDocMappedType,
-    LuaDocMultiLineUnionType, LuaDocObjectFieldKey, LuaDocObjectType, LuaDocStrTplType, LuaDocType,
-    LuaDocUnaryType, LuaDocVariadicType, LuaLiteralToken, LuaSyntaxKind, LuaTypeBinaryOperator,
-    LuaTypeUnaryOperator, LuaVarExpr, NumberResult,
+    LuaDocMultiLineUnionType, LuaDocObjectFieldKey, LuaDocObjectType, LuaDocStrTplType,
+    LuaDocTagAttributeUse, LuaDocType, LuaDocUnaryType, LuaDocVariadicType, LuaLiteralToken,
+    LuaSyntaxKind, LuaTypeBinaryOperator, LuaTypeUnaryOperator, LuaVarExpr, NumberResult,
 };
 use internment::ArcIntern;
 use rowan::TextRange;
@@ -14,16 +14,16 @@ use smol_str::SmolStr;
 
 use crate::{
     AsyncState, DiagnosticCode, GenericParam, GenericTpl, InFiled, LuaAliasCallKind, LuaArrayLen,
-    LuaArrayType, LuaAttributeType, LuaMultiLineUnion, LuaTupleStatus, LuaTypeDeclId, TypeOps,
-    VariadicType,
+    LuaArrayType, LuaAttributeType, LuaAttributeUse, LuaMultiLineUnion, LuaTupleStatus,
+    LuaTypeDeclId, TypeOps, VariadicType,
     db_index::{
-        AnalyzeError, LuaAliasCallType, LuaConditionalType, LuaFunctionType, LuaGenericType,
-        LuaIndexAccessKey, LuaIntersectionType, LuaMappedType, LuaObjectType, LuaStringTplType,
-        LuaTupleType, LuaType,
+        AnalyzeError, LuaAliasCallType, LuaAttributedType, LuaConditionalType, LuaFunctionType,
+        LuaGenericType, LuaIndexAccessKey, LuaIntersectionType, LuaMappedType, LuaObjectType,
+        LuaStringTplType, LuaTupleType, LuaType,
     },
 };
 
-use super::{DocAnalyzer, preprocess_description};
+use super::{DocAnalyzer, attribute_tags::infer_attribute_uses, preprocess_description};
 
 pub fn infer_type(analyzer: &mut DocAnalyzer, node: LuaDocType) -> LuaType {
     match &node {
@@ -253,11 +253,31 @@ fn infer_generic_type(analyzer: &mut DocAnalyzer, generic_type: &LuaDocGenericTy
 
         let mut generic_params = Vec::new();
         if let Some(generic_decl_list) = generic_type.get_generic_types() {
-            for param in generic_decl_list.get_types() {
-                let param_type = infer_type(analyzer, param);
+            let mut pending_attrs: Vec<LuaAttributeUse> = Vec::new();
+            for node in generic_decl_list.syntax().children() {
+                if let Some(tag_use) = LuaDocTagAttributeUse::cast(node.clone()) {
+                    if let Some(attrs) = infer_attribute_uses(analyzer, tag_use) {
+                        pending_attrs.extend(attrs);
+                    }
+                    continue;
+                }
+
+                let Some(param) = LuaDocType::cast(node) else {
+                    continue;
+                };
+
+                let mut param_type = infer_type(analyzer, param);
                 if param_type.is_unknown() {
                     return LuaType::Unknown;
                 }
+
+                if !pending_attrs.is_empty() {
+                    param_type = LuaType::Attributed(
+                        LuaAttributedType::new(param_type, std::mem::take(&mut pending_attrs))
+                            .into(),
+                    );
+                }
+
                 generic_params.push(param_type);
             }
         }
@@ -284,8 +304,26 @@ fn infer_special_generic_type(
         "table" => {
             let mut types = Vec::new();
             if let Some(generic_decl_list) = generic_type.get_generic_types() {
-                for param in generic_decl_list.get_types() {
-                    let param_type = infer_type(analyzer, param);
+                let mut pending_attrs: Vec<LuaAttributeUse> = Vec::new();
+                for node in generic_decl_list.syntax().children() {
+                    if let Some(tag_use) = LuaDocTagAttributeUse::cast(node.clone()) {
+                        if let Some(attrs) = infer_attribute_uses(analyzer, tag_use) {
+                            pending_attrs.extend(attrs);
+                        }
+                        continue;
+                    }
+
+                    let Some(param) = LuaDocType::cast(node) else {
+                        continue;
+                    };
+
+                    let mut param_type = infer_type(analyzer, param);
+                    if !pending_attrs.is_empty() {
+                        param_type = LuaType::Attributed(
+                            LuaAttributedType::new(param_type, std::mem::take(&mut pending_attrs))
+                                .into(),
+                        );
+                    }
                     types.push(param_type);
                 }
             }

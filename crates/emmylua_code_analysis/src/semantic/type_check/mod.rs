@@ -63,6 +63,9 @@ fn check_general_type_compact(
     compact_type: &LuaType,
     check_guard: TypeCheckGuard,
 ) -> TypeCheckResult {
+    let source = source.strip_attributed();
+    let compact_type = compact_type.strip_attributed();
+
     if is_like_any(compact_type) {
         return Ok(());
     }

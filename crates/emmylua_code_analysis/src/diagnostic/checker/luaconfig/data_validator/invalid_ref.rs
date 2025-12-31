@@ -1,11 +1,12 @@
 use std::collections::{HashMap, HashSet};
 
-use emmylua_parser::{LuaAstNode, LuaExpr, LuaTableExpr};
+use emmylua_parser::{LuaAstNode, LuaExpr, LuaIndexKey, LuaTableExpr};
+use internment::ArcIntern;
 use rowan::TextRange;
 
 use crate::{
-    ConfigTablePkOccurrence, DiagnosticCode, LuaMember, LuaMemberKey, LuaMemberOwner,
-    LuaSemanticDeclId, LuaType, LuaTypeDeclId, RenderLevel, SemanticModel,
+    ConfigTablePkOccurrence, DiagnosticCode, LuaMemberKey, LuaMemberOwner, LuaSemanticDeclId,
+    LuaType, LuaTypeDeclId, RenderLevel, SemanticModel,
     attributes::{ConfigTableMode, VRefAttribute},
     diagnostic::checker::{Checker, DiagnosticContext},
     humanize_type, infer_expr, infer_table_should_be,
@@ -22,11 +23,16 @@ impl Checker for InvalidRefChecker {
         let db = semantic_model.get_db();
         let root = semantic_model.get_root().clone();
 
-        // 扫描所有表以收集 Bean 表
+        // 扫描所有表以收集 Bean 表 / 容器表
         // TODO: 关于 ref 的目标我们跳过了 Singleton ConfigTable, 因为在 lua 中我们完全可以通过 require 单例来解决
         let mut infer_cache = semantic_model.get_cache().borrow_mut();
+
         let mut beans_to_check: HashSet<LuaTypeDeclId> = HashSet::new();
         let mut bean_tables: Vec<(LuaTableExpr, LuaTypeDeclId)> = Vec::new();
+        let mut container_tables: Vec<(LuaTableExpr, ContainerRefRule)> = Vec::new();
+
+        // 仅收集本文件实际用到的 (target_table -> target_keys)，用于过滤主键值集合构建
+        let mut needed: HashMap<LuaTypeDeclId, HashSet<LuaMemberKey>> = HashMap::new();
 
         for table_expr in root.descendants::<LuaTableExpr>() {
             let Ok(table_should_be) =
@@ -35,24 +41,43 @@ impl Checker for InvalidRefChecker {
                 continue;
             };
 
-            let Some(bean_id) =
+            if let Some(bean_id) =
                 resolve_expected_bean_id(db, file_id, &table_expr, &table_should_be)
-            else {
+            {
+                beans_to_check.insert(bean_id.clone());
+                bean_tables.push((table_expr, bean_id));
                 continue;
-            };
+            }
 
-            beans_to_check.insert(bean_id.clone());
-            bean_tables.push((table_expr, bean_id));
+            if let Some(rule) = resolve_expected_container_rule(
+                context,
+                db,
+                file_id,
+                table_expr.get_range(),
+                &table_should_be,
+            ) {
+                if let Some(rule) = rule.key_rule.as_ref() {
+                    needed
+                        .entry(rule.target_table.clone())
+                        .or_default()
+                        .insert(rule.target_key.clone());
+                }
+                if let Some(rule) = rule.value_rule.as_ref() {
+                    needed
+                        .entry(rule.target_table.clone())
+                        .or_default()
+                        .insert(rule.target_key.clone());
+                }
+                container_tables.push((table_expr, rule));
+            }
         }
 
-        if bean_tables.is_empty() {
+        if bean_tables.is_empty() && container_tables.is_empty() {
             return;
         }
 
         // Bean -> v.ref rules (只生成签名合法的规则)
         let mut bean_rules_cache: HashMap<LuaTypeDeclId, Vec<ValidatedVRefRule>> = HashMap::new();
-        // 仅收集本文件实际用到的 (target_table -> target_keys)，用于过滤主键值集合构建
-        let mut needed: HashMap<LuaTypeDeclId, HashSet<LuaMemberKey>> = HashMap::new();
         for bean_id in beans_to_check {
             let rules = collect_vref_rules_for_bean(context, db, &bean_id);
             if rules.is_empty() {
@@ -67,7 +92,7 @@ impl Checker for InvalidRefChecker {
             bean_rules_cache.insert(bean_id, rules);
         }
 
-        if bean_rules_cache.is_empty() {
+        if needed.is_empty() {
             return;
         }
 
@@ -95,6 +120,57 @@ impl Checker for InvalidRefChecker {
             });
         }
 
+        let mut reported_no_values: HashSet<(LuaTypeDeclId, LuaMemberKey)> = HashSet::new();
+        let mut filtered_container_tables = Vec::new();
+        for (table_expr, mut rule) in container_tables {
+            if let Some(key_rule) = rule.key_rule.as_ref()
+                && !pk_sets.has_any(&key_rule.target_table, &key_rule.target_key)
+            {
+                if reported_no_values
+                    .insert((key_rule.target_table.clone(), key_rule.target_key.clone()))
+                {
+                    context.add_diagnostic(
+                        DiagnosticCode::InvalidRef,
+                        key_rule.decl_range,
+                        t!(
+                            "Invalid v.ref: `%{table}.%{key}` has no indexed values",
+                            table = key_rule.target_table.get_name(),
+                            key = key_rule.target_key.to_path()
+                        )
+                        .to_string(),
+                        None,
+                    );
+                }
+                rule.key_rule = None;
+            }
+
+            if let Some(value_rule) = rule.value_rule.as_ref()
+                && !pk_sets.has_any(&value_rule.target_table, &value_rule.target_key)
+            {
+                if reported_no_values.insert((
+                    value_rule.target_table.clone(),
+                    value_rule.target_key.clone(),
+                )) {
+                    context.add_diagnostic(
+                        DiagnosticCode::InvalidRef,
+                        value_rule.decl_range,
+                        t!(
+                            "Invalid v.ref: `%{table}.%{key}` has no indexed values",
+                            table = value_rule.target_table.get_name(),
+                            key = value_rule.target_key.to_path()
+                        )
+                        .to_string(),
+                        None,
+                    );
+                }
+                rule.value_rule = None;
+            }
+
+            if rule.key_rule.is_some() || rule.value_rule.is_some() {
+                filtered_container_tables.push((table_expr, rule));
+            }
+        }
+
         for (table_expr, bean_id) in bean_tables {
             let Some(rules) = bean_rules_cache.get(&bean_id) else {
                 continue;
@@ -105,6 +181,17 @@ impl Checker for InvalidRefChecker {
 
             validate_bean_table_data(context, db, &mut infer_cache, &pk_sets, rules, &table_expr);
         }
+
+        for (table_expr, rule) in filtered_container_tables {
+            validate_container_table_data(
+                context,
+                db,
+                &mut infer_cache,
+                &pk_sets,
+                &rule,
+                &table_expr,
+            );
+        }
     }
 }
 
@@ -114,6 +201,28 @@ struct ValidatedVRefRule {
     source_key: LuaMemberKey,
     target_table: LuaTypeDeclId,
     target_key: LuaMemberKey,
+}
+
+#[derive(Debug, Clone)]
+struct ValidatedVRefTarget {
+    decl_range: TextRange,
+    target_table: LuaTypeDeclId,
+    target_key: LuaMemberKey,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ContainerKind {
+    Array,
+    List,
+    Set,
+    Map,
+}
+
+#[derive(Debug, Clone)]
+struct ContainerRefRule {
+    kind: ContainerKind,
+    key_rule: Option<ValidatedVRefTarget>,
+    value_rule: Option<ValidatedVRefTarget>,
 }
 
 #[derive(Default)]
@@ -190,6 +299,20 @@ impl PkValueSets {
     }
 }
 
+fn infer_key_type_from_index_key(
+    db: &crate::DbIndex,
+    infer_cache: &mut crate::LuaInferCache,
+    key: &LuaIndexKey,
+) -> Option<LuaType> {
+    let member_key = LuaMemberKey::from_index_key(db, infer_cache, key).ok()?;
+    match member_key {
+        LuaMemberKey::Name(name) => Some(LuaType::StringConst(ArcIntern::new(name))),
+        LuaMemberKey::Integer(i) => Some(LuaType::IntegerConst(i)),
+        LuaMemberKey::ExprType(typ) => Some(typ),
+        LuaMemberKey::None => None,
+    }
+}
+
 fn validate_bean_table_data(
     context: &mut DiagnosticContext,
     db: &crate::DbIndex,
@@ -251,6 +374,124 @@ fn validate_bean_table_data(
     }
 }
 
+fn validate_container_table_data(
+    context: &mut DiagnosticContext,
+    db: &crate::DbIndex,
+    infer_cache: &mut crate::LuaInferCache,
+    pk_sets: &PkValueSets,
+    rule: &ContainerRefRule,
+    table: &LuaTableExpr,
+) {
+    match rule.kind {
+        ContainerKind::Array | ContainerKind::List | ContainerKind::Set => {
+            let Some(value_rule) = rule.value_rule.as_ref() else {
+                return;
+            };
+
+            for field in table.get_fields() {
+                if !field.is_value_field() {
+                    continue;
+                }
+
+                let Some(value_expr) = field.get_value_expr() else {
+                    continue;
+                };
+
+                let Ok(value_typ) = infer_expr(db, infer_cache, value_expr.clone()) else {
+                    continue;
+                };
+
+                if !is_checkable_literal_key(&value_typ) {
+                    continue;
+                }
+
+                if pk_sets.contains(&value_rule.target_table, &value_rule.target_key, &value_typ) {
+                    continue;
+                }
+
+                let value = humanize_type(db, &value_typ, RenderLevel::Simple);
+                let key_path = value_rule.target_key.to_path();
+                let table_name = value_rule.target_table.get_name();
+
+                context.add_diagnostic(
+                    DiagnosticCode::InvalidRef,
+                    field.get_range(),
+                    t!(
+                        "Invalid reference `%{value}`: not found in `%{table}.%{key}`",
+                        value = value,
+                        table = table_name,
+                        key = key_path
+                    )
+                    .to_string(),
+                    None,
+                );
+            }
+        }
+        ContainerKind::Map => {
+            for field in table.get_fields() {
+                if !field.is_assign_field() {
+                    continue;
+                }
+
+                if let Some(key_rule) = rule.key_rule.as_ref()
+                    && let Some(field_key) = field.get_field_key()
+                    && let Some(key_typ) =
+                        infer_key_type_from_index_key(db, infer_cache, &field_key)
+                {
+                    if is_checkable_literal_key(&key_typ)
+                        && !pk_sets.contains(&key_rule.target_table, &key_rule.target_key, &key_typ)
+                    {
+                        let value = humanize_type(db, &key_typ, RenderLevel::Simple);
+                        let key_path = key_rule.target_key.to_path();
+                        let table_name = key_rule.target_table.get_name();
+                        context.add_diagnostic(
+                            DiagnosticCode::InvalidRef,
+                            field.get_range(),
+                            t!(
+                                "Invalid reference `%{value}`: not found in `%{table}.%{key}`",
+                                value = value,
+                                table = table_name,
+                                key = key_path
+                            )
+                            .to_string(),
+                            None,
+                        );
+                    }
+                }
+
+                if let Some(value_rule) = rule.value_rule.as_ref()
+                    && let Some(value_expr) = field.get_value_expr()
+                    && let Ok(value_typ) = infer_expr(db, infer_cache, value_expr.clone())
+                {
+                    if is_checkable_literal_key(&value_typ)
+                        && !pk_sets.contains(
+                            &value_rule.target_table,
+                            &value_rule.target_key,
+                            &value_typ,
+                        )
+                    {
+                        let value = humanize_type(db, &value_typ, RenderLevel::Simple);
+                        let key_path = value_rule.target_key.to_path();
+                        let table_name = value_rule.target_table.get_name();
+                        context.add_diagnostic(
+                            DiagnosticCode::InvalidRef,
+                            field.get_range(),
+                            t!(
+                                "Invalid reference `%{value}`: not found in `%{table}.%{key}`",
+                                value = value,
+                                table = table_name,
+                                key = key_path
+                            )
+                            .to_string(),
+                            None,
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn collect_vref_rules_for_bean(
     context: &mut DiagnosticContext,
     db: &crate::DbIndex,
@@ -284,9 +525,14 @@ fn collect_vref_rules_for_bean(
         };
         let field_name = vref_attr.get_field_name();
 
-        let Some((target_table, target_key)) =
-            validate_vref_signature(context, db, member, table_name, field_name)
-        else {
+        let Some((target_table, target_key)) = validate_vref_signature(
+            context,
+            db,
+            member.get_file_id(),
+            member.get_range(),
+            table_name,
+            field_name,
+        ) else {
             continue;
         };
 
@@ -360,20 +606,158 @@ fn resolve_expected_bean_id(
     }
 }
 
+fn resolve_expected_container_rule(
+    context: &mut DiagnosticContext,
+    db: &crate::DbIndex,
+    file_id: crate::FileId,
+    decl_range: TextRange,
+    ty: &LuaType,
+) -> Option<ContainerRefRule> {
+    let ty = ty.strip_attributed();
+    match ty {
+        LuaType::Generic(generic) => {
+            let base_name = generic.get_base_type_id_ref().get_name();
+            let params = generic.get_params();
+
+            match base_name {
+                "array" => {
+                    let element_ty = params.first()?;
+                    let value_rule =
+                        resolve_vref_target_from_type(context, db, file_id, decl_range, element_ty);
+                    value_rule.map(|value_rule| ContainerRefRule {
+                        kind: ContainerKind::Array,
+                        key_rule: None,
+                        value_rule: Some(value_rule),
+                    })
+                }
+                "list" => {
+                    let element_ty = params.first()?;
+                    let value_rule =
+                        resolve_vref_target_from_type(context, db, file_id, decl_range, element_ty);
+                    value_rule.map(|value_rule| ContainerRefRule {
+                        kind: ContainerKind::List,
+                        key_rule: None,
+                        value_rule: Some(value_rule),
+                    })
+                }
+                "set" => {
+                    let element_ty = params.first()?;
+                    let value_rule =
+                        resolve_vref_target_from_type(context, db, file_id, decl_range, element_ty);
+                    value_rule.map(|value_rule| ContainerRefRule {
+                        kind: ContainerKind::Set,
+                        key_rule: None,
+                        value_rule: Some(value_rule),
+                    })
+                }
+                "map" => {
+                    let key_ty = params.first()?;
+                    let value_ty = params.get(1)?;
+                    let key_rule =
+                        resolve_vref_target_from_type(context, db, file_id, decl_range, key_ty);
+                    let value_rule =
+                        resolve_vref_target_from_type(context, db, file_id, decl_range, value_ty);
+                    if key_rule.is_none() && value_rule.is_none() {
+                        None
+                    } else {
+                        Some(ContainerRefRule {
+                            kind: ContainerKind::Map,
+                            key_rule,
+                            value_rule,
+                        })
+                    }
+                }
+                _ => None,
+            }
+        }
+        LuaType::Array(array) => {
+            let value_rule =
+                resolve_vref_target_from_type(context, db, file_id, decl_range, array.get_base());
+            value_rule.map(|value_rule| ContainerRefRule {
+                kind: ContainerKind::Array,
+                key_rule: None,
+                value_rule: Some(value_rule),
+            })
+        }
+        LuaType::TableGeneric(params) => {
+            let key_ty = params.first()?;
+            let value_ty = params.get(1)?;
+            let key_rule = resolve_vref_target_from_type(context, db, file_id, decl_range, key_ty);
+            let value_rule =
+                resolve_vref_target_from_type(context, db, file_id, decl_range, value_ty);
+            if key_rule.is_none() && value_rule.is_none() {
+                None
+            } else {
+                Some(ContainerRefRule {
+                    kind: ContainerKind::Map,
+                    key_rule,
+                    value_rule,
+                })
+            }
+        }
+        LuaType::Union(union) => {
+            let mut found: Option<ContainerRefRule> = None;
+            for inner in union.into_vec().iter() {
+                let Some(rule) =
+                    resolve_expected_container_rule(context, db, file_id, decl_range, inner)
+                else {
+                    continue;
+                };
+
+                if found.is_some() {
+                    return None;
+                }
+                found = Some(rule);
+            }
+            found
+        }
+        LuaType::MultiLineUnion(multi) => {
+            let union = multi.to_union();
+            resolve_expected_container_rule(context, db, file_id, decl_range, &union)
+        }
+        _ => None,
+    }
+}
+
+fn resolve_vref_target_from_type(
+    context: &mut DiagnosticContext,
+    db: &crate::DbIndex,
+    file_id: crate::FileId,
+    decl_range: TextRange,
+    ty: &LuaType,
+) -> Option<ValidatedVRefTarget> {
+    let LuaType::Attributed(attributed) = ty else {
+        return None;
+    };
+
+    let vref_attr = VRefAttribute::find_in_uses(attributed.get_attributes())?;
+
+    let table_name = vref_attr.get_table_name()?;
+    let field_name = vref_attr.get_field_name();
+
+    let (target_table, target_key) =
+        validate_vref_signature(context, db, file_id, decl_range, table_name, field_name)?;
+
+    Some(ValidatedVRefTarget {
+        decl_range,
+        target_table,
+        target_key,
+    })
+}
+
 /// 验证 v.ref 的签名, 确保合法
 fn validate_vref_signature(
     context: &mut DiagnosticContext,
     db: &crate::DbIndex,
-    source_member: &LuaMember,
+    file_id: crate::FileId,
+    range: TextRange,
     target_table_name: &str,
     target_field_name: Option<&str>,
 ) -> Option<(LuaTypeDeclId, LuaMemberKey)> {
-    let range = source_member.get_range();
-
     // 解析到真实的 ConfigTable 类型(支持当前文件 namespace/using)
     let Some(target_decl) = db
         .get_type_index()
-        .find_type_decl(source_member.get_file_id(), target_table_name)
+        .find_type_decl(file_id, target_table_name)
     else {
         context.add_diagnostic(
             DiagnosticCode::InvalidRef,

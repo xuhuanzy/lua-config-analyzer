@@ -132,6 +132,13 @@ impl<'a> VRefAttribute<'a> {
             .map(|inner| Self { inner })
     }
 
+    pub fn find_in_uses(attribute_uses: &'a [LuaAttributeUse]) -> Option<Self> {
+        attribute_uses
+            .iter()
+            .find(|attribute_use| attribute_use.id.get_name() == Self::NAME)
+            .map(|inner| Self { inner })
+    }
+
     pub fn get_table_name(&self) -> Option<&str> {
         let ty = self
             .inner

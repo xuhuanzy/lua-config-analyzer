@@ -258,4 +258,179 @@ mod test {
             "#,
         ));
     }
+
+    #[test]
+    fn test_array_ref_value() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+        "#,
+        );
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type array<[v.ref("TbItem")] int>
+            local itemIds = { 1, 2 }
+            "#,
+        ));
+
+        assert!(ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type array<[v.ref("TbItem")] int>
+            local itemIds = { 1, 3 }
+            "#,
+        ));
+    }
+
+    #[test]
+    fn test_list_ref_value() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+        "#,
+        );
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type list<[v.ref("TbItem")] int>
+            local itemIds = { 1, 2 }
+            "#,
+        ));
+    }
+
+    #[test]
+    fn test_set_ref_value() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+        "#,
+        );
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type set<[v.ref("TbItem")] int>
+            local itemSet = { 1, 2 }
+            "#,
+        ));
+    }
+
+    #[test]
+    fn test_map_ref_key_and_value() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+        "#,
+        );
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type map<[v.ref("TbItem")] int, string>
+            local itemNameById = { [1] = "A", [2] = "B" }
+            "#,
+        ));
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type map<int, [v.ref("TbItem")] int>
+            local itemIdByUser = { [1] = 3, [2] = 2 }
+            "#,
+        ));
+
+        assert!(ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type map<int, [v.ref("TbItem")] int>
+            local itemIdByUser = { [1] = 1, [2] = 3 }
+            "#,
+        ));
+    }
+
+    #[test]
+    fn test_nested_list_list_ref_value() {
+        let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
+        ws.def(
+            r#"
+            ---@class Item: Bean
+            ---@field id int
+
+            ---@class TbItem: ConfigTable
+            ---@field [int] Item
+
+            ---@type TbItem
+            local items = {
+                { id = 1 },
+                { id = 3 },
+            }
+
+            ---@class TestNested: Bean
+            ---@field ids list<list<[v.ref("TbItem")] int>>
+        "#,
+        );
+
+        assert!(!ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type TestNested
+            local t = { ids = { { 1, 2 }, { 3 } } }
+            "#,
+        ));
+
+        assert!(ws.check_code_for(
+            DiagnosticCode::InvalidRef,
+            r#"
+            ---@type TestNested
+            local t = { ids = { { 1, 3 }, { 3 } } }
+            "#,
+        ));
+    }
 }

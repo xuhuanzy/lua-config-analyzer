@@ -293,6 +293,9 @@ fn infer_table_field_type_by_parent(
     field: LuaTableField,
 ) -> InferResult {
     let member_id = LuaMemberId::new(field.get_syntax_id(), cache.get_file_id());
+    let is_table_value = field
+        .get_value_expr()
+        .is_some_and(|expr| matches!(expr, LuaExpr::TableExpr(_)));
     if let Some(type_cache) = db.get_type_index().get_type_cache(&member_id.into()) {
         let typ = type_cache.as_type();
         match typ {
@@ -301,11 +304,82 @@ fn infer_table_field_type_by_parent(
                 let types = tuple.get_types();
                 // 这种情况下缓存的类型可能是不精确的
                 if tuple.is_infer_resolve() && types.len() == 1 && types[0].is_unknown() {
+                } else if is_table_value {
+                    let Some(parnet_table_expr) = field.get_parent::<LuaTableExpr>() else {
+                        return Ok(typ.clone());
+                    };
+                    let Ok(parent_table_expr_type) =
+                        infer_table_should_be(db, cache, parnet_table_expr)
+                    else {
+                        return Ok(typ.clone());
+                    };
+
+                    let index = LuaIndexMemberExpr::TableField(field.clone());
+                    if let Ok(member_type) = infer_member_by_member_key(
+                        db,
+                        cache,
+                        &parent_table_expr_type,
+                        index.clone(),
+                        &InferGuard::new(),
+                    ) {
+                        return Ok(member_type);
+                    }
+
+                    if let Ok(member_type) = infer_member_by_operator(
+                        db,
+                        cache,
+                        &parent_table_expr_type,
+                        index,
+                        &InferGuard::new(),
+                    ) {
+                        return Ok(member_type);
+                    }
+
+                    return Ok(typ.clone());
                 } else {
                     return Ok(typ.clone());
                 }
             }
-            typ => return Ok(typ.clone()),
+            typ => {
+                // `infer_table_should_be` 需要尽可能返回「上下文期望类型」而不是「字面量推断类型」。
+                // 对于 `a = { ... }` 这种 assign_field，如果 value 是 table 且上层有明确类型，
+                // 缓存里的 tuple/array 推断会丢失泛型参数上的 attribute（例如 `[v.ref]`）。
+                if !is_table_value {
+                    return Ok(typ.clone());
+                }
+
+                let Some(parnet_table_expr) = field.get_parent::<LuaTableExpr>() else {
+                    return Ok(typ.clone());
+                };
+                let Ok(parent_table_expr_type) =
+                    infer_table_should_be(db, cache, parnet_table_expr)
+                else {
+                    return Ok(typ.clone());
+                };
+
+                let index = LuaIndexMemberExpr::TableField(field.clone());
+                if let Ok(member_type) = infer_member_by_member_key(
+                    db,
+                    cache,
+                    &parent_table_expr_type,
+                    index.clone(),
+                    &InferGuard::new(),
+                ) {
+                    return Ok(member_type);
+                }
+
+                if let Ok(member_type) = infer_member_by_operator(
+                    db,
+                    cache,
+                    &parent_table_expr_type,
+                    index,
+                    &InferGuard::new(),
+                ) {
+                    return Ok(member_type);
+                }
+
+                return Ok(typ.clone());
+            }
         }
     } else if field.is_value_field() {
         return infer_table_field_value_should_be(db, cache, field);
