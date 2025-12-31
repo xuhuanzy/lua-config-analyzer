@@ -4,13 +4,15 @@ use emmylua_parser::{LuaAstNode, LuaExpr, LuaIndexKey, LuaTableExpr};
 use internment::ArcIntern;
 use rowan::TextRange;
 
+use super::super::attribute::vref_signature::parse_vref_signature;
+
 use crate::{
     ConfigTablePkOccurrence, DiagnosticCode, LuaMemberKey, LuaMemberOwner, LuaSemanticDeclId,
     LuaType, LuaTypeDeclId, RenderLevel, SemanticModel,
-    attributes::{ConfigTableMode, VRefAttribute},
+    attributes::VRefAttribute,
     diagnostic::checker::{Checker, DiagnosticContext},
     humanize_type, infer_expr, infer_table_should_be,
-    semantic::shared::luaconfig::{BEAN, CONFIG_TABLE},
+    semantic::shared::luaconfig::BEAN,
 };
 
 pub struct InvalidRefChecker;
@@ -50,7 +52,6 @@ impl Checker for InvalidRefChecker {
             }
 
             if let Some(rule) = resolve_expected_container_rule(
-                context,
                 db,
                 file_id,
                 table_expr.get_range(),
@@ -79,7 +80,7 @@ impl Checker for InvalidRefChecker {
         // Bean -> v.ref rules (只生成签名合法的规则)
         let mut bean_rules_cache: HashMap<LuaTypeDeclId, Vec<ValidatedVRefRule>> = HashMap::new();
         for bean_id in beans_to_check {
-            let rules = collect_vref_rules_for_bean(context, db, &bean_id);
+            let rules = collect_vref_rules_for_bean(db, &bean_id);
             if rules.is_empty() {
                 continue;
             }
@@ -493,7 +494,6 @@ fn validate_container_table_data(
 }
 
 fn collect_vref_rules_for_bean(
-    context: &mut DiagnosticContext,
     db: &crate::DbIndex,
     bean_id: &LuaTypeDeclId,
 ) -> Vec<ValidatedVRefRule> {
@@ -525,14 +525,9 @@ fn collect_vref_rules_for_bean(
         };
         let field_name = vref_attr.get_field_name();
 
-        let Some((target_table, target_key)) = validate_vref_signature(
-            context,
-            db,
-            member.get_file_id(),
-            member.get_range(),
-            table_name,
-            field_name,
-        ) else {
+        let Some((target_table, target_key)) =
+            validate_vref_signature(db, member.get_file_id(), table_name, field_name)
+        else {
             continue;
         };
 
@@ -607,7 +602,6 @@ fn resolve_expected_bean_id(
 }
 
 fn resolve_expected_container_rule(
-    context: &mut DiagnosticContext,
     db: &crate::DbIndex,
     file_id: crate::FileId,
     decl_range: TextRange,
@@ -623,7 +617,7 @@ fn resolve_expected_container_rule(
                 "array" => {
                     let element_ty = params.first()?;
                     let value_rule =
-                        resolve_vref_target_from_type(context, db, file_id, decl_range, element_ty);
+                        resolve_vref_target_from_type(db, file_id, decl_range, element_ty);
                     value_rule.map(|value_rule| ContainerRefRule {
                         kind: ContainerKind::Array,
                         key_rule: None,
@@ -633,7 +627,7 @@ fn resolve_expected_container_rule(
                 "list" => {
                     let element_ty = params.first()?;
                     let value_rule =
-                        resolve_vref_target_from_type(context, db, file_id, decl_range, element_ty);
+                        resolve_vref_target_from_type(db, file_id, decl_range, element_ty);
                     value_rule.map(|value_rule| ContainerRefRule {
                         kind: ContainerKind::List,
                         key_rule: None,
@@ -643,7 +637,7 @@ fn resolve_expected_container_rule(
                 "set" => {
                     let element_ty = params.first()?;
                     let value_rule =
-                        resolve_vref_target_from_type(context, db, file_id, decl_range, element_ty);
+                        resolve_vref_target_from_type(db, file_id, decl_range, element_ty);
                     value_rule.map(|value_rule| ContainerRefRule {
                         kind: ContainerKind::Set,
                         key_rule: None,
@@ -653,10 +647,9 @@ fn resolve_expected_container_rule(
                 "map" => {
                     let key_ty = params.first()?;
                     let value_ty = params.get(1)?;
-                    let key_rule =
-                        resolve_vref_target_from_type(context, db, file_id, decl_range, key_ty);
+                    let key_rule = resolve_vref_target_from_type(db, file_id, decl_range, key_ty);
                     let value_rule =
-                        resolve_vref_target_from_type(context, db, file_id, decl_range, value_ty);
+                        resolve_vref_target_from_type(db, file_id, decl_range, value_ty);
                     if key_rule.is_none() && value_rule.is_none() {
                         None
                     } else {
@@ -672,7 +665,7 @@ fn resolve_expected_container_rule(
         }
         LuaType::Array(array) => {
             let value_rule =
-                resolve_vref_target_from_type(context, db, file_id, decl_range, array.get_base());
+                resolve_vref_target_from_type(db, file_id, decl_range, array.get_base());
             value_rule.map(|value_rule| ContainerRefRule {
                 kind: ContainerKind::Array,
                 key_rule: None,
@@ -682,9 +675,8 @@ fn resolve_expected_container_rule(
         LuaType::TableGeneric(params) => {
             let key_ty = params.first()?;
             let value_ty = params.get(1)?;
-            let key_rule = resolve_vref_target_from_type(context, db, file_id, decl_range, key_ty);
-            let value_rule =
-                resolve_vref_target_from_type(context, db, file_id, decl_range, value_ty);
+            let key_rule = resolve_vref_target_from_type(db, file_id, decl_range, key_ty);
+            let value_rule = resolve_vref_target_from_type(db, file_id, decl_range, value_ty);
             if key_rule.is_none() && value_rule.is_none() {
                 None
             } else {
@@ -698,8 +690,7 @@ fn resolve_expected_container_rule(
         LuaType::Union(union) => {
             let mut found: Option<ContainerRefRule> = None;
             for inner in union.into_vec().iter() {
-                let Some(rule) =
-                    resolve_expected_container_rule(context, db, file_id, decl_range, inner)
+                let Some(rule) = resolve_expected_container_rule(db, file_id, decl_range, inner)
                 else {
                     continue;
                 };
@@ -713,14 +704,13 @@ fn resolve_expected_container_rule(
         }
         LuaType::MultiLineUnion(multi) => {
             let union = multi.to_union();
-            resolve_expected_container_rule(context, db, file_id, decl_range, &union)
+            resolve_expected_container_rule(db, file_id, decl_range, &union)
         }
         _ => None,
     }
 }
 
 fn resolve_vref_target_from_type(
-    context: &mut DiagnosticContext,
     db: &crate::DbIndex,
     file_id: crate::FileId,
     decl_range: TextRange,
@@ -735,8 +725,7 @@ fn resolve_vref_target_from_type(
     let table_name = vref_attr.get_table_name()?;
     let field_name = vref_attr.get_field_name();
 
-    let (target_table, target_key) =
-        validate_vref_signature(context, db, file_id, decl_range, table_name, field_name)?;
+    let (target_table, target_key) = validate_vref_signature(db, file_id, table_name, field_name)?;
 
     Some(ValidatedVRefTarget {
         decl_range,
@@ -745,158 +734,13 @@ fn resolve_vref_target_from_type(
     })
 }
 
-/// 验证 v.ref 的签名, 确保合法
 fn validate_vref_signature(
-    context: &mut DiagnosticContext,
     db: &crate::DbIndex,
     file_id: crate::FileId,
-    range: TextRange,
     target_table_name: &str,
     target_field_name: Option<&str>,
 ) -> Option<(LuaTypeDeclId, LuaMemberKey)> {
-    // 解析到真实的 ConfigTable 类型(支持当前文件 namespace/using)
-    let Some(target_decl) = db
-        .get_type_index()
-        .find_type_decl(file_id, target_table_name)
-    else {
-        context.add_diagnostic(
-            DiagnosticCode::InvalidRef,
-            range,
-            t!(
-                "Invalid v.ref: unknown config table `%{table}`",
-                table = target_table_name
-            )
-            .to_string(),
-            None,
-        );
-        return None;
-    };
-
-    let target_table_id = target_decl.get_id();
-    if !CONFIG_TABLE.is_config_table(db, &target_table_id) {
-        context.add_diagnostic(
-            DiagnosticCode::InvalidRef,
-            range,
-            t!(
-                "Invalid v.ref: `%{table}` is not a `ConfigTable`",
-                table = target_table_name
-            )
-            .to_string(),
-            None,
-        );
-        return None;
-    }
-
-    let mode = db
-        .get_config_index()
-        .get_config_table_mode(&target_table_id);
-    // TODO: 暂不处理 singleton
-    if mode == ConfigTableMode::Singleton {
-        return None;
-    }
-
-    let Some(index_keys) = db
-        .get_config_index()
-        .get_config_table_keys(&target_table_id)
-    else {
-        context.add_diagnostic(
-            DiagnosticCode::InvalidRef,
-            range,
-            t!(
-                "Invalid v.ref: `%{table}` has no primary keys",
-                table = target_table_id.get_name()
-            )
-            .to_string(),
-            None,
-        );
-        return None;
-    };
-
-    let keys = index_keys.keys();
-    match mode {
-        ConfigTableMode::Map => {
-            if keys.len() != 1 {
-                context.add_diagnostic(
-                    DiagnosticCode::InvalidRef,
-                    range,
-                    t!(
-                        "Invalid v.ref: map table `%{table}` must have exactly one primary key",
-                        table = target_table_id.get_name()
-                    )
-                    .to_string(),
-                    None,
-                );
-                return None;
-            }
-
-            let pk = keys[0].clone();
-            if let Some(field_name) = target_field_name {
-                let Some(pk_name) = pk.get_name() else {
-                    context.add_diagnostic(
-                        DiagnosticCode::InvalidRef,
-                        range,
-                        t!(
-                            "Invalid v.ref: map table `%{table}` has non-name primary key",
-                            table = target_table_id.get_name()
-                        )
-                        .to_string(),
-                        None,
-                    );
-                    return None;
-                };
-                if pk_name != field_name {
-                    context.add_diagnostic(
-                        DiagnosticCode::InvalidRef,
-                        range,
-                        t!(
-                            "Invalid v.ref: map table `%{table}` primary key is `%{pk}`",
-                            table = target_table_id.get_name(),
-                            pk = pk_name
-                        )
-                        .to_string(),
-                        None,
-                    );
-                    return None;
-                }
-            }
-
-            Some((target_table_id, pk))
-        }
-        ConfigTableMode::List => {
-            let Some(field_name) = target_field_name else {
-                context.add_diagnostic(
-                    DiagnosticCode::InvalidRef,
-                    range,
-                    t!(
-                        "Invalid v.ref: list table `%{table}` requires explicit `field`",
-                        table = target_table_id.get_name()
-                    )
-                    .to_string(),
-                    None,
-                );
-                return None;
-            };
-
-            let field_key = LuaMemberKey::Name(field_name.to_string().into());
-            if !keys.iter().any(|k| k == &field_key) {
-                context.add_diagnostic(
-                    DiagnosticCode::InvalidRef,
-                    range,
-                    t!(
-                        "Invalid v.ref: `%{field}` is not a primary key of `%{table}`",
-                        field = field_name,
-                        table = target_table_id.get_name()
-                    )
-                    .to_string(),
-                    None,
-                );
-                return None;
-            }
-
-            Some((target_table_id, field_key))
-        }
-        ConfigTableMode::Singleton => None,
-    }
+    parse_vref_signature(db, file_id, target_table_name, target_field_name).ok()
 }
 
 fn is_checkable_literal_key(ty: &LuaType) -> bool {

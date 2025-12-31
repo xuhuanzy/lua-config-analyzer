@@ -45,7 +45,7 @@ mod test {
     fn test_map_ref_field_must_be_primary_key() {
         let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
         assert!(!ws.check_code_for(
-            DiagnosticCode::InvalidRef,
+            DiagnosticCode::InvalidRefSignature,
             r#"
             ---@class Item: Bean
             ---@field id int
@@ -80,7 +80,7 @@ mod test {
     fn test_list_ref_requires_field() {
         let mut ws = crate::VirtualWorkspace::new_with_init_std_lib();
         assert!(!ws.check_code_for(
-            DiagnosticCode::InvalidRef,
+            DiagnosticCode::InvalidRefSignature,
             r#"
             ---@class Item: Bean
             ---@field id int
