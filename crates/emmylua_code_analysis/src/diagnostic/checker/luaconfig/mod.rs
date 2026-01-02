@@ -15,6 +15,7 @@ pub fn check_luaconfig(context: &mut DiagnosticContext, semantic_model: &Semanti
         context,
         semantic_model,
     );
+    run_check::<attribute::flags_enum_value::FlagsEnumValueChecker>(context, semantic_model);
     run_check::<attribute::vref_signature::VRefSignatureChecker>(context, semantic_model);
     run_check::<data_validator::invalid_ref::InvalidRefChecker>(context, semantic_model);
     run_check::<data_validator::duplicate_set_element::DuplicateSetElementChecker>(

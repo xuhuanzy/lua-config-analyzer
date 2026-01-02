@@ -7,3 +7,7 @@ Invalid index field `%{name}`:
   en: Invalid index field `%{name}`
   zh_CN: 无效的索引字段 `%{name}`
   zh_HK: 無效的索引字段 `%{name}`
+Flags enum `%{enum_name}` field `%{name}` value `%{value}` must be a power of two:
+  en: Flags enum `%{enum_name}` field `%{name}` has invalid value `%{value}`, must be a power of two (1, 2, 4, 8, 16...)
+  zh_CN: 位域枚举 `%{enum_name}` 的字段 `%{name}` 值 `%{value}` 无效，必须是 2 的幂次方 (1, 2, 4, 8, 16...)
+  zh_HK: 位域枚舉 `%{enum_name}` 的字段 `%{name}` 值 `%{value}` 無效，必須是 2 的冪次方 (1, 2, 4, 8, 16...)

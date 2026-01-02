@@ -123,6 +123,8 @@ pub enum DiagnosticCode {
     InvalidRef,
     /// invalid-ref-signature
     InvalidRefSignature,
+    /// invalid-flags-enum-value
+    InvalidFlagsEnumValue,
     /// duplicate-set-element
     DuplicateSetElement,
 

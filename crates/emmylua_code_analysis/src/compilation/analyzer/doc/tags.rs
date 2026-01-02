@@ -223,6 +223,12 @@ pub fn get_owner_id(
                 name_token.get_name_text(),
             )))
         }
+        LuaAst::LuaDocTagEnum(enum_tag) => {
+            let name_token = enum_tag.get_name_token()?;
+            Some(LuaSemanticDeclId::TypeDecl(LuaTypeDeclId::new(
+                name_token.get_name_text(),
+            )))
+        }
         _ => {
             let closure = find_owner_closure(analyzer)?;
             Some(LuaSemanticDeclId::Signature(LuaSignatureId::from_closure(

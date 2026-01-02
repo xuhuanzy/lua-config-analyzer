@@ -128,7 +128,8 @@ fn attribute_find_doc(comment: &LuaSyntaxNode) -> Option<LuaSyntaxNode> {
                     LuaSyntaxKind::DocTagField
                     | LuaSyntaxKind::DocTagParam
                     | LuaSyntaxKind::DocTagReturn
-                    | LuaSyntaxKind::DocTagClass,
+                    | LuaSyntaxKind::DocTagClass
+                    | LuaSyntaxKind::DocTagEnum,
                 ) => {
                     if let Some(node) = sibling.as_node() {
                         return Some(node.clone());
