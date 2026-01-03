@@ -127,6 +127,8 @@ pub enum DiagnosticCode {
     InvalidFlagsEnumValue,
     /// duplicate-set-element
     DuplicateSetElement,
+    /// duplicate-index-value
+    DuplicateIndexValue,
 
     #[serde(other)]
     None,

@@ -26,27 +26,8 @@
 
 ---@class ConfigTable
 
----@attribute v.index(id: string)
-
 -- 标记枚举为位域, 位域的值为2的幂次.
 ---@attribute flags()
-
--- 检查某字段是否为某配置表的合法 key.
---
--- ### 参数:
---
--- - `tableName`: 配置表名称, 必须是`ConfigTable`的子类.
--- - `key`: 指定主键名称. 如果不提供, 则自动使用配置表的主键.
---
----@attribute v.ref(tableName: string, key?: string)
-
--- 检查`list<bean>`与`array<bean>`内指定字段的值是否唯一.
---
--- ### 参数:
---
--- - `id`: 指定字段名称
----@attribute v.index(id: string)
-
 
 -- 定义配置表的索引(主键)字段列表, 可以有多个索引字段.
 --
@@ -65,3 +46,25 @@
 -- - "list": 列表, 允许多主键.
 -- - "singleton": 单例.
 ---@attribute t.mode(mode: "map" | "list" | "singleton")
+
+--#region validator
+
+-- 检查某字段是否为某配置表的合法 key.
+--
+-- ### 参数:
+--
+-- - `tableName`: 配置表名称, 必须是`ConfigTable`的子类.
+-- - `key`: 指定主键名称. 如果不提供, 则自动使用配置表的主键.
+--
+---@attribute v.ref(tableName: string, key?: string)
+
+-- 检查`array<Bean>`/`list<Bean>`/`set<Bean>`内指定字段的值是否唯一.
+--
+-- 被检查的元素类型必须为`Bean`.
+--
+-- ### 参数:
+--
+-- - `key`: 指定字段名称
+---@attribute v.index(key: string)
+
+--#endregion

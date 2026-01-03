@@ -105,10 +105,18 @@ impl<'a> VIndexAttribute<'a> {
             .map(|inner| Self { inner })
     }
 
-    pub fn get_id(&self) -> Option<&str> {
+    pub fn find_all_in_uses(attribute_uses: &'a [LuaAttributeUse]) -> Vec<Self> {
+        attribute_uses
+            .iter()
+            .filter(|attribute_use| attribute_use.id.get_name() == Self::NAME)
+            .map(|inner| Self { inner })
+            .collect()
+    }
+
+    pub fn get_key(&self) -> Option<&str> {
         let ty = self
             .inner
-            .get_param_by_name("id")
+            .get_param_by_name("key")
             .or_else(|| self.inner.args.first().and_then(|(_, t)| t.as_ref()))?;
 
         match ty {
