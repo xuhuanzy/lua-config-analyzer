@@ -2,7 +2,8 @@ use std::collections::HashSet;
 
 use crate::{
     DiagnosticCode, DocTypeInferContext, LuaType, SemanticModel, TypeCheckFailReason,
-    TypeCheckResult, diagnostic::checker::humanize_lint_type, infer_doc_type,
+    TypeCheckResult, attributes::parse_set_spec_type, diagnostic::checker::humanize_lint_type,
+    infer_doc_type,
 };
 use emmylua_parser::{LuaAstNode, LuaDocAttributeUse, LuaDocTagAttributeUse, LuaDocType};
 use rowan::TextRange;
@@ -50,12 +51,71 @@ fn check_attribute_use(
     };
 
     let def_params = attr_def.get_params();
-    let args = match attribute_use.get_arg_list() {
+    let arg_list = attribute_use.get_arg_list();
+    let args = match &arg_list {
         Some(arg_list) => arg_list.get_args().collect::<Vec<_>>(),
         None => vec![],
     };
     check_param_count(context, &def_params, &attribute_use, &args);
+
+    if type_id.get_name() == "v.set" {
+        check_vset_values_param(context, semantic_model, attribute_use, &args);
+        return Some(());
+    }
     check_param(context, semantic_model, &def_params, args);
+
+    Some(())
+}
+
+fn check_vset_values_param(
+    context: &mut DiagnosticContext,
+    semantic_model: &SemanticModel,
+    attribute_use: &LuaDocAttributeUse,
+    args: &[LuaDocType],
+) -> Option<()> {
+    let Some(first_arg) = args.first() else {
+        let Some(arg_list) = attribute_use.get_arg_list() else {
+            return Some(());
+        };
+
+        let raw = arg_list.syntax().text().to_string();
+        let raw = raw.trim();
+        let inner = raw
+            .strip_prefix('(')
+            .and_then(|s| s.strip_suffix(')'))
+            .unwrap_or(raw)
+            .trim();
+
+        if inner.is_empty() {
+            return Some(());
+        }
+
+        let normalized: String = inner.chars().filter(|c| !c.is_whitespace()).collect();
+        let reason = if normalized == "[]" {
+            "values must not be empty"
+        } else {
+            "values parameter must be a tuple literal like [1, 2]"
+        };
+
+        context.add_diagnostic(
+            DiagnosticCode::AttributeParamTypeMismatch,
+            arg_list.get_range(),
+            t!("Invalid v.set values: %{reason}", reason = reason).to_string(),
+            None,
+        );
+
+        return Some(());
+    };
+    let doc_ctx = DocTypeInferContext::new(semantic_model.get_db(), semantic_model.get_file_id());
+    let arg_type = infer_doc_type(doc_ctx, first_arg);
+    if let Err(err) = parse_set_spec_type(&arg_type) {
+        context.add_diagnostic(
+            DiagnosticCode::AttributeParamTypeMismatch,
+            first_arg.get_range(),
+            t!("Invalid v.set values: %{reason}", reason = err.to_string()).to_string(),
+            None,
+        );
+    }
 
     Some(())
 }

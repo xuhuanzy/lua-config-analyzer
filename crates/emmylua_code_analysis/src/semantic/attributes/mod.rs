@@ -1,9 +1,12 @@
 use crate::{LuaAttributeUse, LuaCommonProperty, LuaType};
 
 mod v_range;
+mod v_set;
 mod v_size;
 
 pub use v_range::{RangeEnd, RangeParseError, RangeSpec, VRangeAttribute, parse_range_spec};
+pub(crate) use v_set::parse_set_spec_type;
+pub use v_set::{SetParseError, SetSpec, SetValue, VSetAttribute};
 pub use v_size::{SizeSpec, VSizeAttribute};
 
 /// 配置表索引模式

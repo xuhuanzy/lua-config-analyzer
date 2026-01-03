@@ -127,12 +127,16 @@ pub enum DiagnosticCode {
     InvalidRangeSignature,
     /// invalid-size-signature
     InvalidSizeSignature,
+    /// invalid-set-signature
+    InvalidSetSignature,
     /// invalid-flags-enum-value
     InvalidFlagsEnumValue,
     /// invalid-range-value
     InvalidRangeValue,
     /// invalid-size-value
     InvalidSizeValue,
+    /// invalid-set-value
+    InvalidSetValue,
     /// duplicate-set-element
     DuplicateSetElement,
     /// duplicate-index-value

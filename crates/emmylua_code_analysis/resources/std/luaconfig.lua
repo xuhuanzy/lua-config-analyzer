@@ -93,4 +93,8 @@
 -- ```
 ---@attribute v.size(size: integer|string)
 
+-- 检查值是否在指定的集合内. 仅可用于标量类型.
+--
+---@attribute v.set(values: (int|string)[])
+
 --#endregion
