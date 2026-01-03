@@ -1,5 +1,9 @@
 use crate::{LuaAttributeUse, LuaCommonProperty, LuaType};
 
+mod v_range;
+
+pub use v_range::{RangeEnd, RangeParseError, RangeSpec, VRangeAttribute, parse_range_spec};
+
 /// 配置表索引模式
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ConfigTableIndexMode {

@@ -17,7 +17,12 @@ pub fn check_luaconfig(context: &mut DiagnosticContext, semantic_model: &Semanti
     );
     run_check::<attribute::flags_enum_value::FlagsEnumValueChecker>(context, semantic_model);
     run_check::<attribute::vref_signature::VRefSignatureChecker>(context, semantic_model);
+    run_check::<attribute::vrange_signature::VRangeSignatureChecker>(context, semantic_model);
     run_check::<data_validator::invalid_ref::InvalidRefChecker>(context, semantic_model);
+    run_check::<data_validator::invalid_range_value::InvalidRangeValueChecker>(
+        context,
+        semantic_model,
+    );
     run_check::<data_validator::duplicate_index_value::DuplicateIndexValueChecker>(
         context,
         semantic_model,
