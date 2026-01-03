@@ -4,3 +4,4 @@ mod duplicate_set_element_test;
 mod invalid_index_field_test;
 mod invalid_range_value_test;
 mod invalid_ref_test;
+mod invalid_size_value_test;

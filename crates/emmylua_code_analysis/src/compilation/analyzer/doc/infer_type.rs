@@ -9,7 +9,7 @@ use emmylua_parser::{
     LuaSyntaxKind, LuaTypeBinaryOperator, LuaTypeUnaryOperator, LuaVarExpr, NumberResult,
 };
 use internment::ArcIntern;
-use rowan::TextRange;
+use rowan::{NodeOrToken, TextRange};
 use smol_str::SmolStr;
 
 use crate::{
@@ -26,10 +26,21 @@ use crate::{
 use super::{DocAnalyzer, attribute_tags::infer_attribute_uses, preprocess_description};
 
 pub fn infer_type(analyzer: &mut DocAnalyzer, node: LuaDocType) -> LuaType {
-    match &node {
+    let prefix_attributes = collect_prefix_type_attributes(analyzer, &node);
+    let inferred = infer_type_inner(analyzer, &node);
+
+    if inferred.is_unknown() || prefix_attributes.is_empty() {
+        return inferred;
+    }
+
+    LuaType::Attributed(LuaAttributedType::new(inferred, prefix_attributes).into())
+}
+
+fn infer_type_inner(analyzer: &mut DocAnalyzer, node: &LuaDocType) -> LuaType {
+    match node {
         LuaDocType::Name(name_type) => {
             if let Some(name) = name_type.get_name_text() {
-                return infer_buildin_or_ref_type(analyzer, &name, name_type.get_range(), &node);
+                return infer_buildin_or_ref_type(analyzer, &name, name_type.get_range(), node);
             }
         }
         LuaDocType::Nullable(nullable_type) => {
@@ -132,6 +143,48 @@ pub fn infer_type(analyzer: &mut DocAnalyzer, node: LuaDocType) -> LuaType {
         }
     }
     LuaType::Unknown
+}
+
+fn collect_prefix_type_attributes(
+    analyzer: &mut DocAnalyzer,
+    node: &LuaDocType,
+) -> Vec<LuaAttributeUse> {
+    let mut groups: Vec<Vec<LuaAttributeUse>> = Vec::new();
+
+    let mut cursor = node.syntax().clone().prev_sibling_or_token();
+    while let Some(element) = cursor {
+        match element {
+            NodeOrToken::Token(token) => {
+                if token.text().trim().is_empty() {
+                    cursor = token.prev_sibling_or_token();
+                    continue;
+                }
+                break;
+            }
+            NodeOrToken::Node(syntax) => {
+                if syntax.kind() == LuaSyntaxKind::DocTagAttributeUse.into() {
+                    if let Some(tag_use) = LuaDocTagAttributeUse::cast(syntax.clone())
+                        && let Some(attrs) = infer_attribute_uses(analyzer, tag_use)
+                        && !attrs.is_empty()
+                    {
+                        groups.push(attrs);
+                    }
+
+                    cursor = syntax.prev_sibling_or_token();
+                    continue;
+                }
+
+                break;
+            }
+        }
+    }
+
+    if groups.is_empty() {
+        return Vec::new();
+    }
+
+    groups.reverse();
+    groups.into_iter().flatten().collect()
 }
 
 fn infer_buildin_or_ref_type(
@@ -253,29 +306,10 @@ fn infer_generic_type(analyzer: &mut DocAnalyzer, generic_type: &LuaDocGenericTy
 
         let mut generic_params = Vec::new();
         if let Some(generic_decl_list) = generic_type.get_generic_types() {
-            let mut pending_attrs: Vec<LuaAttributeUse> = Vec::new();
-            for node in generic_decl_list.syntax().children() {
-                if let Some(tag_use) = LuaDocTagAttributeUse::cast(node.clone()) {
-                    if let Some(attrs) = infer_attribute_uses(analyzer, tag_use) {
-                        pending_attrs.extend(attrs);
-                    }
-                    continue;
-                }
-
-                let Some(param) = LuaDocType::cast(node) else {
-                    continue;
-                };
-
-                let mut param_type = infer_type(analyzer, param);
+            for param in generic_decl_list.get_types() {
+                let param_type = infer_type(analyzer, param);
                 if param_type.is_unknown() {
                     return LuaType::Unknown;
-                }
-
-                if !pending_attrs.is_empty() {
-                    param_type = LuaType::Attributed(
-                        LuaAttributedType::new(param_type, std::mem::take(&mut pending_attrs))
-                            .into(),
-                    );
                 }
 
                 generic_params.push(param_type);
@@ -304,26 +338,8 @@ fn infer_special_generic_type(
         "table" => {
             let mut types = Vec::new();
             if let Some(generic_decl_list) = generic_type.get_generic_types() {
-                let mut pending_attrs: Vec<LuaAttributeUse> = Vec::new();
-                for node in generic_decl_list.syntax().children() {
-                    if let Some(tag_use) = LuaDocTagAttributeUse::cast(node.clone()) {
-                        if let Some(attrs) = infer_attribute_uses(analyzer, tag_use) {
-                            pending_attrs.extend(attrs);
-                        }
-                        continue;
-                    }
-
-                    let Some(param) = LuaDocType::cast(node) else {
-                        continue;
-                    };
-
-                    let mut param_type = infer_type(analyzer, param);
-                    if !pending_attrs.is_empty() {
-                        param_type = LuaType::Attributed(
-                            LuaAttributedType::new(param_type, std::mem::take(&mut pending_attrs))
-                                .into(),
-                        );
-                    }
+                for param in generic_decl_list.get_types() {
+                    let param_type = infer_type(analyzer, param);
                     types.push(param_type);
                 }
             }
